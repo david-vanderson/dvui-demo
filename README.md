@@ -1,6 +1,6 @@
 # GUI Examples
 
-Here are some examples of how to use [gui](https://github.com/david-vanderson/gui). This repo serves as an example for how to integrate gui.
+This repo serves as an example for how to integrate [gui](https://github.com/david-vanderson/gui).
 
 - zig build run-standalone-sdl
   - you want to build a new app
