@@ -21,6 +21,9 @@ pub fn build(b: *std.Build) !void {
 
         exe.addModule("gui", gui_dep.module("gui"));
         exe.addModule("SDLBackend", gui_dep.module("SDLBackend"));
+
+        // TODO: remove this part about freetype (pulling it from the gui_dep
+        // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
         const freetype_dep = gui_dep.builder.dependency("freetype", .{
             .target = target,
             .optimize = optimize,
