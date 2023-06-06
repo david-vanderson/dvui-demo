@@ -7,6 +7,8 @@ const gpa = gpa_instance.allocator();
 
 const vsync = true;
 
+var show_dialog_outside_frame: bool = false;
+
 /// This example shows how to use the gui for a normal application:
 /// - gui renders the whole application
 /// - render frames only when needed
@@ -54,19 +56,25 @@ pub fn main() !void {
         // waitTime and beginWait combine to achieve variable framerates
         const wait_event_micros = win.waitTime(end_micros, null);
         backend.waitEventTimeout(wait_event_micros);
+
+        // Example of how to show a dialog from another thread (outside of win.begin/win.end)
+        if (show_dialog_outside_frame) {
+            show_dialog_outside_frame = false;
+            try gui.dialog(@src(), .{ .window = &win, .modal = false, .title = "Dialog from Outside", .message = "This is a non modal dialog that was created outside win.begin()/win.end(), usually from another thread." });
+        }
     }
 }
 
 fn gui_frame() !void {
-    var scroll = try gui.scrollArea(@src(), 0, .{ .expand = .both, .color_style = .window });
+    var scroll = try gui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
     defer scroll.deinit();
 
-    var tl = try gui.textLayout(@src(), 0, .{ .expand = .both, .font_style = .title_4 });
+    var tl = try gui.textLayout(@src(), .{}, .{ .expand = .both, .font_style = .title_4 });
     const lorem = "This example shows how to use gui in a normal application.";
     try tl.addText(lorem, .{});
     tl.deinit();
 
-    var tl2 = try gui.textLayout(@src(), 0, .{ .expand = .both });
+    var tl2 = try gui.textLayout(@src(), .{}, .{ .expand = .both });
     try tl2.addText("The gui is painting the entire window, and can also show floating windows and dialogs.", .{});
     try tl2.addText("\n\n", .{});
     try tl2.addText("Framerate is variable and adjusts as needed for input events and animations.", .{});
@@ -81,13 +89,17 @@ fn gui_frame() !void {
     tl2.deinit();
 
     if (gui.examples.show_demo_window) {
-        if (try gui.button(@src(), 0, "Hide Demo Window", .{})) {
+        if (try gui.button(@src(), "Hide Demo Window", .{})) {
             gui.examples.show_demo_window = false;
         }
     } else {
-        if (try gui.button(@src(), 0, "Show Demo Window", .{})) {
+        if (try gui.button(@src(), "Show Demo Window", .{})) {
             gui.examples.show_demo_window = true;
         }
+    }
+
+    if (try gui.button(@src(), "Show Dialog From\nOutside Frame", .{})) {
+        show_dialog_outside_frame = true;
     }
 
     // look at demo() for examples of gui widgets, shows in a floating window

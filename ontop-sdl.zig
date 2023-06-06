@@ -83,18 +83,18 @@ pub fn main() !void {
 }
 
 fn gui_stuff() !void {
-    var float = try gui.floatingWindow(@src(), 0, false, null, null, .{ .min_size_content = .{ .w = 400, .h = 400 } });
+    var float = try gui.floatingWindow(@src(), .{}, .{ .min_size_content = .{ .w = 400, .h = 400 } });
     defer float.deinit();
 
-    var scroll = try gui.scrollArea(@src(), 0, .{ .expand = .both, .color_style = .window });
+    var scroll = try gui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
     defer scroll.deinit();
 
-    var tl = try gui.textLayout(@src(), 0, .{ .expand = .both, .font_style = .title_4 });
+    var tl = try gui.textLayout(@src(), .{}, .{ .expand = .both, .font_style = .title_4 });
     const lorem = "This example shows how to use gui for floating windows on top of an existing application.";
     try tl.addText(lorem, .{});
     tl.deinit();
 
-    var tl2 = try gui.textLayout(@src(), 0, .{ .expand = .both });
+    var tl2 = try gui.textLayout(@src(), .{}, .{ .expand = .both });
     try tl2.addText("The gui is painting only floating windows and dialogs.", .{});
     try tl2.addText("\n\n", .{});
     try tl2.addText("Framerate is managed by the application (in this demo capped at vsync).", .{});
@@ -103,11 +103,11 @@ fn gui_stuff() !void {
     tl2.deinit();
 
     if (gui.examples.show_demo_window) {
-        if (try gui.button(@src(), 0, "Hide Demo Window", .{})) {
+        if (try gui.button(@src(), "Hide Demo Window", .{})) {
             gui.examples.show_demo_window = false;
         }
     } else {
-        if (try gui.button(@src(), 0, "Show Demo Window", .{})) {
+        if (try gui.button(@src(), "Show Demo Window", .{})) {
             gui.examples.show_demo_window = true;
         }
     }
