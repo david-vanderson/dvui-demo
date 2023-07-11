@@ -66,7 +66,7 @@ pub fn main() !void {
 
         // marks end of gui frame, don't call gui functions after this
         // - sends all gui stuff to backend for rendering, must be called before renderPresent()
-        _ = try win.end();
+        _ = try win.end(.{});
 
         // cursor management
         if (win.cursorRequestedFloating()) |cursor| {
@@ -124,7 +124,7 @@ fn app_init() !void {
         return error.BackendError;
     }
 
-    window = c.SDL_CreateWindow("GUI Ontop Example", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, @intCast(c_int, 640), @intCast(c_int, 480), c.SDL_WINDOW_ALLOW_HIGHDPI | c.SDL_WINDOW_RESIZABLE) orelse {
+    window = c.SDL_CreateWindow("GUI Ontop Example", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, @as(c_int, @intCast(640)), @as(c_int, @intCast(480)), c.SDL_WINDOW_ALLOW_HIGHDPI | c.SDL_WINDOW_RESIZABLE) orelse {
         std.debug.print("Failed to open window: {s}\n", .{c.SDL_GetError()});
         return error.BackendError;
     };

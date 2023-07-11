@@ -3,8 +3,8 @@
     .version = "0.0.1",
     .dependencies = .{
         .gui = .{
-            .url = "https://github.com/david-vanderson/gui/archive/7b672b16501956fb78ddd7f6f802df13c39fabd1.tar.gz",
-            .hash = "12201c0a8a7af0718699eb8424f0ea6f332582fd92e44e61d0d9bce8c411cd49d8fd",
+            .url = "https://github.com/david-vanderson/gui/archive/4d9c8849eb831c4a5c63da0451cd41016063bf0b.tar.gz",
+            .hash = "1220015e12edbef8d52bcbb0e54b0e6933a342c214b6e3e3b91dbfc7c2f6d1893ea0",
         },
     },
 }
