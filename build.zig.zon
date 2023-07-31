@@ -2,9 +2,9 @@
     .name = "gui-demo",
     .version = "0.0.1",
     .dependencies = .{
-        .gui = .{
-            .url = "https://github.com/david-vanderson/gui/archive/4d9c8849eb831c4a5c63da0451cd41016063bf0b.tar.gz",
-            .hash = "1220015e12edbef8d52bcbb0e54b0e6933a342c214b6e3e3b91dbfc7c2f6d1893ea0",
+        .dvui = .{
+            .url = "https://github.com/david-vanderson/gui/archive/f38e254b314e0ed1b92ca17d21783fe24e96a21c.tar.gz",
+            .hash = "12201d34b6f7d5c8b8a70129db4c63ba22b717d375c00a775a4483d24161b9d0949f",
         },
     },
 }

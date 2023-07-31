@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const gui_dep = b.dependency("gui", .{ .target = target, .optimize = optimize });
+    const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize });
 
     const examples = [_][]const u8{
         "standalone-sdl",
@@ -19,12 +19,12 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
 
-        exe.addModule("gui", gui_dep.module("gui"));
-        exe.addModule("SDLBackend", gui_dep.module("SDLBackend"));
+        exe.addModule("dvui", dvui_dep.module("dvui"));
+        exe.addModule("SDLBackend", dvui_dep.module("SDLBackend"));
 
-        // TODO: remove this part about freetype (pulling it from the gui_dep
+        // TODO: remove this part about freetype (pulling it from the dvui_dep
         // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
-        const freetype_dep = gui_dep.builder.dependency("freetype", .{
+        const freetype_dep = dvui_dep.builder.dependency("freetype", .{
             .target = target,
             .optimize = optimize,
         });
@@ -34,7 +34,7 @@ pub fn build(b: *std.Build) !void {
         exe.linkLibC();
 
         const compile_step = b.step(ex, "Compile " ++ ex);
-        compile_step.dependOn(&b.addInstallArtifact(exe).step);
+        compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
         b.getInstallStep().dependOn(compile_step);
 
         const run_cmd = b.addRunArtifact(exe);
