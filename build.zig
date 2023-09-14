@@ -30,7 +30,19 @@ pub fn build(b: *std.Build) !void {
         });
         exe.linkLibrary(freetype_dep.artifact("freetype"));
 
-        exe.linkSystemLibrary("SDL2");
+        if (target.isLinux()) {
+            exe.linkSystemLibrary("SDL2");
+        }
+        // TODO: remove this part about sdl (pulling it from the dvui_dep
+        // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
+        else {
+            const sdl_dep = dvui_dep.builder.dependency("sdl", .{
+                .target = target,
+                .optimize = optimize,
+            });
+            exe.linkLibrary(sdl_dep.artifact("SDL2"));
+        }
+
         exe.linkLibC();
         if (target.isDarwin()) {
             exe.linkSystemLibrary("z");
