@@ -30,46 +30,7 @@ pub fn build(b: *std.Build) !void {
         });
         exe.linkLibrary(freetype_dep.artifact("freetype"));
 
-        if (target.isLinux()) {
-            exe.linkSystemLibrary("SDL2");
-        }
-        // TODO: remove this part about sdl (pulling it from the dvui_dep
-        // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
-        else {
-            const sdl_dep = dvui_dep.builder.dependency("sdl", .{
-                .target = target,
-                .optimize = optimize,
-            });
-            exe.linkLibrary(sdl_dep.artifact("SDL2"));
-        }
-
-        exe.linkLibC();
-        if (target.isDarwin()) {
-            exe.linkSystemLibrary("z");
-            exe.linkSystemLibrary("bz2");
-            exe.linkSystemLibrary("iconv");
-            exe.linkFramework("AppKit");
-            exe.linkFramework("AudioToolbox");
-            exe.linkFramework("Carbon");
-            exe.linkFramework("Cocoa");
-            exe.linkFramework("CoreAudio");
-            exe.linkFramework("CoreFoundation");
-            exe.linkFramework("CoreGraphics");
-            exe.linkFramework("CoreHaptics");
-            exe.linkFramework("CoreVideo");
-            exe.linkFramework("ForceFeedback");
-            exe.linkFramework("GameController");
-            exe.linkFramework("IOKit");
-            exe.linkFramework("Metal");
-        } else if (target.isWindows()) {
-            exe.linkSystemLibrary("setupapi");
-            exe.linkSystemLibrary("winmm");
-            exe.linkSystemLibrary("gdi32");
-            exe.linkSystemLibrary("imm32");
-            exe.linkSystemLibrary("version");
-            exe.linkSystemLibrary("oleaut32");
-            exe.linkSystemLibrary("ole32");
-        }
+        link_deps(exe, dvui_dep.builder);
 
         const compile_step = b.step(ex, "Compile " ++ ex);
         compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -80,5 +41,32 @@ pub fn build(b: *std.Build) !void {
 
         const run_step = b.step("run-" ++ ex, "Run " ++ ex);
         run_step.dependOn(&run_cmd.step);
+    }
+}
+
+fn link_deps(exe: *std.Build.Step.Compile, b: *std.Build) void {
+    const freetype_dep = b.dependency("freetype", .{
+        .target = exe.target,
+        .optimize = exe.optimize,
+    });
+    exe.linkLibrary(freetype_dep.artifact("freetype"));
+    exe.linkLibC();
+
+    if (exe.target.isWindows()) {
+        const sdl_dep = b.dependency("sdl", .{
+            .target = exe.target,
+            .optimize = exe.optimize,
+        });
+        exe.linkLibrary(sdl_dep.artifact("SDL2"));
+
+        exe.linkSystemLibrary("setupapi");
+        exe.linkSystemLibrary("winmm");
+        exe.linkSystemLibrary("gdi32");
+        exe.linkSystemLibrary("imm32");
+        exe.linkSystemLibrary("version");
+        exe.linkSystemLibrary("oleaut32");
+        exe.linkSystemLibrary("ole32");
+    } else {
+        exe.linkSystemLibrary("SDL2");
     }
 }
