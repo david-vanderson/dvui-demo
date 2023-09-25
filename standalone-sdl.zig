@@ -24,6 +24,7 @@ pub fn main() !void {
 
     // init dvui Window (maps onto a single OS window)
     var win = try dvui.Window.init(@src(), 0, gpa, backend.backend());
+    win.content_scale = backend.initial_scale;
     defer win.deinit();
 
     var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -92,12 +93,12 @@ fn dvui_frame() !void {
     var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
     defer scroll.deinit();
 
-    var tl = try dvui.textLayout(@src(), .{}, .{ .expand = .both, .font_style = .title_4 });
+    var tl = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
     const lorem = "This example shows how to use dvui in a normal application.";
     try tl.addText(lorem, .{});
     tl.deinit();
 
-    var tl2 = try dvui.textLayout(@src(), .{}, .{ .expand = .both });
+    var tl2 = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
     try tl2.addText(
         \\The dvui
         \\- paints the entire window
