@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) !void {
         exe.addModule("dvui", dvui_dep.module("dvui"));
         exe.addModule("SDLBackend", dvui_dep.module("SDLBackend"));
 
-        link_deps(exe, dvui_dep.builder);
+        link_deps(exe, dvui_dep);
 
         const compile_step = b.step(ex, "Compile " ++ ex);
         compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -36,24 +36,36 @@ pub fn build(b: *std.Build) !void {
     }
 }
 
-fn link_deps(exe: *std.Build.Step.Compile, b: *std.Build) void {
-    // TODO: remove this part about freetype (pulling it from the dvui_dep
-    // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
+fn link_deps(exe: *std.Build.Step.Compile, dvui_dep: *std.Build.Dependency) void {
+    const b = dvui_dep.builder;
 
-    const freetype_dep = b.dependency("freetype", .{
-        .target = exe.target,
-        .optimize = exe.optimize,
-    });
-    exe.linkLibrary(freetype_dep.artifact("freetype"));
+    //This should all be cleaned up when zig 0.12.x is released.
+    if (true) {
+        // Here we are trying to work within zig 0.11.x but not expose dvui's
+        // internal dependencies.
+        exe.linkLibrary(dvui_dep.artifact("dvui_libs"));
+        @import("root").dependencies.imports.dvui.add_include_paths(dvui_dep.builder, exe);
+    } else {
+        // Here we link the internal dependencies explicitly.
 
-    // TODO: remove this part about stb_image once either:
-    // - zig can successfully cimport stb_image.h
-    // - zig can have a module depend on a c file
-    const stbi_dep = b.dependency("stb_image", .{
-        .target = exe.target,
-        .optimize = exe.optimize,
-    });
-    exe.linkLibrary(stbi_dep.artifact("stb_image"));
+        // TODO: remove this part about freetype (pulling it from the dvui_dep
+        // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
+
+        const freetype_dep = b.dependency("freetype", .{
+            .target = exe.target,
+            .optimize = exe.optimize,
+        });
+        exe.linkLibrary(freetype_dep.artifact("freetype"));
+
+        // TODO: remove this part about stb_image once either:
+        // - zig can successfully cimport stb_image.h
+        // - zig can have a module depend on a c file
+        const stbi_dep = b.dependency("stb_image", .{
+            .target = exe.target,
+            .optimize = exe.optimize,
+        });
+        exe.linkLibrary(stbi_dep.artifact("stb_image"));
+    }
 
     exe.linkLibC();
 
