@@ -85,7 +85,7 @@ fn dvui_stuff() !void {
 
     try dvui.windowHeader("Floating Window", "", null);
 
-    var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
+    var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .{ .name = .fill_window } });
     defer scroll.deinit();
 
     var tl = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -102,11 +102,11 @@ fn dvui_stuff() !void {
     tl2.deinit();
 
     if (dvui.Examples.show_demo_window) {
-        if (try dvui.button(@src(), "Hide Demo Window", .{})) {
+        if (try dvui.button(@src(), "Hide Demo Window", .{}, .{})) {
             dvui.Examples.show_demo_window = false;
         }
     } else {
-        if (try dvui.button(@src(), "Show Demo Window", .{})) {
+        if (try dvui.button(@src(), "Show Demo Window", .{}, .{})) {
             dvui.Examples.show_demo_window = true;
         }
     }

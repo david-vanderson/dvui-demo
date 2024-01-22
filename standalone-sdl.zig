@@ -2,6 +2,8 @@ const std = @import("std");
 const dvui = @import("dvui");
 const Backend = @import("SDLBackend");
 
+const window_icon_png = @embedFile("src/zig-favicon.png");
+
 var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
@@ -15,10 +17,11 @@ var show_dialog_outside_frame: bool = false;
 pub fn main() !void {
     // init SDL backend (creates OS window)
     var backend = try Backend.init(.{
-        .width = 500,
-        .height = 600,
+        .size = .{ .w = 500.0, .h = 600.0 },
+        .min_size = .{ .w = 250.0, .h = 350.0 },
         .vsync = vsync,
         .title = "DVUI Standalone Example",
+        .icon = window_icon_png, // can also call setIconFromFileContent()
     });
     defer backend.deinit();
 
@@ -37,6 +40,10 @@ pub fn main() !void {
         // send all SDL events to dvui for processing
         const quit = try backend.addAllEvents(&win);
         if (quit) break :main_loop;
+
+        // if dvui widgets might not cover the whole window, then need to clear
+        // the previous frame's render
+        backend.clear();
 
         try dvui_frame();
 
@@ -68,7 +75,7 @@ fn dvui_frame() !void {
         defer m.deinit();
 
         if (try dvui.menuItemLabel(@src(), "File", .{ .submenu = true }, .{ .expand = .none })) |r| {
-            var fw = try dvui.popup(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+            var fw = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
             defer fw.deinit();
 
             if (try dvui.menuItemLabel(@src(), "Close Menu", .{}, .{}) != null) {
@@ -77,15 +84,15 @@ fn dvui_frame() !void {
         }
 
         if (try dvui.menuItemLabel(@src(), "Edit", .{ .submenu = true }, .{ .expand = .none })) |r| {
-            var fw = try dvui.popup(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+            var fw = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
             defer fw.deinit();
-            _ = try dvui.menuItemLabel(@src(), "Cut", .{}, .{});
-            _ = try dvui.menuItemLabel(@src(), "Copy", .{}, .{});
-            _ = try dvui.menuItemLabel(@src(), "Paste", .{}, .{});
+            _ = try dvui.menuItemLabel(@src(), "Dummy", .{}, .{ .expand = .horizontal });
+            _ = try dvui.menuItemLabel(@src(), "Dummy Long", .{}, .{ .expand = .horizontal });
+            _ = try dvui.menuItemLabel(@src(), "Dummy Super Long", .{}, .{ .expand = .horizontal });
         }
     }
 
-    var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
+    var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .{ .name = .fill_window } });
     defer scroll.deinit();
 
     var tl = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -95,7 +102,7 @@ fn dvui_frame() !void {
 
     var tl2 = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
     try tl2.addText(
-        \\The dvui
+        \\DVUI
         \\- paints the entire window
         \\- can show floating windows and dialogs
         \\- example menu at the top of the window
@@ -114,16 +121,16 @@ fn dvui_frame() !void {
     tl2.deinit();
 
     if (dvui.Examples.show_demo_window) {
-        if (try dvui.button(@src(), "Hide Demo Window", .{})) {
+        if (try dvui.button(@src(), "Hide Demo Window", .{}, .{})) {
             dvui.Examples.show_demo_window = false;
         }
     } else {
-        if (try dvui.button(@src(), "Show Demo Window", .{})) {
+        if (try dvui.button(@src(), "Show Demo Window", .{}, .{})) {
             dvui.Examples.show_demo_window = true;
         }
     }
 
-    if (try dvui.button(@src(), "Show Dialog From\nOutside Frame", .{})) {
+    if (try dvui.button(@src(), "Show Dialog From\nOutside Frame", .{}, .{})) {
         show_dialog_outside_frame = true;
     }
 
