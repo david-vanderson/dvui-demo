@@ -11,5 +11,5 @@ This repo serves as an example for how to integrate [dvui](https://github.com/da
   - you already have an app or game
   - you want to add some gui stuff (like floating windows to for debugging)
   - use this example for integration
-  - add [dvui](https://github.com/david-vanderson/dvui) as a git submodule
+  - can use [dvui](https://github.com/david-vanderson/dvui) as a git submodule
 
