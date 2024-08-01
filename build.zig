@@ -7,8 +7,8 @@ pub fn build(b: *std.Build) !void {
     const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize });
 
     const examples = [_][]const u8{
-        "standalone-sdl",
-        "ontop-sdl",
+        "sdl-standalone",
+        "sdl-ontop",
     };
 
     inline for (examples) |ex| {
@@ -22,14 +22,14 @@ pub fn build(b: *std.Build) !void {
         exe.root_module.addImport("dvui", dvui_dep.module("dvui"));
         exe.root_module.addImport("SDLBackend", dvui_dep.module("SDLBackend"));
 
-        const compile_step = b.step(ex, "Compile " ++ ex);
+        const compile_step = b.step("compile-" ++ ex, "Compile " ++ ex);
         compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
         b.getInstallStep().dependOn(compile_step);
 
         const run_cmd = b.addRunArtifact(exe);
         run_cmd.step.dependOn(compile_step);
 
-        const run_step = b.step("run-" ++ ex, "Run " ++ ex);
+        const run_step = b.step(ex, "Run " ++ ex);
         run_step.dependOn(&run_cmd.step);
     }
 }
