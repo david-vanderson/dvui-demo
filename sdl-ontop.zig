@@ -17,12 +17,12 @@ pub fn main() !void {
     // app_init is a stand-in for what your application is already doing to set things up
     try app_init();
 
-    // create SDL backend using existing window and renderer
-    var backend = SDLBackend{ .window = @as(*c.SDL_Window, @ptrCast(window)), .renderer = @as(*c.SDL_Renderer, @ptrCast(renderer)) };
-    // your app will do the SDL deinit
+    // create SDL backend using existing window and renderer, app still owns the window/renderer
+    var backend = SDLBackend.init(window, renderer);
+    defer backend.deinit();
 
     // init dvui Window (maps onto a single OS window)
-    var win = try dvui.Window.init(@src(), 0, gpa, backend.backend());
+    var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{});
     defer win.deinit();
 
     main_loop: while (true) {
@@ -53,11 +53,28 @@ pub fn main() !void {
             }
         }
 
-        // this is where the application would do it's normal rendering with
-        // dvui calls interleaved
-        backend.clear();
+        // clear the window
+        _ = c.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        _ = c.SDL_RenderClear(renderer);
 
-        try dvui_stuff();
+        // draw some SDL stuff with dvui floating stuff in the middle
+        var rect: c.SDL_Rect = .{ .x = 10, .y = 10, .w = 20, .h = 20 };
+        _ = c.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        _ = c.SDL_RenderFillRect(renderer, &rect);
+
+        try dvui_floating_stuff();
+
+        rect.x += 24;
+        _ = c.SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+        _ = c.SDL_RenderFillRect(renderer, &rect);
+
+        rect.x += 24;
+        _ = c.SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+        _ = c.SDL_RenderFillRect(renderer, &rect);
+
+        _ = c.SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
+
+        _ = c.SDL_RenderDrawLine(renderer, rect.x + 4, rect.y + 30, rect.x + 100, rect.y + 4);
 
         // marks end of dvui frame, don't call dvui functions after this
         // - sends all dvui stuff to backend for rendering, must be called before renderPresent()
@@ -75,9 +92,13 @@ pub fn main() !void {
         // render frame to OS
         backend.renderPresent();
     }
+
+    c.SDL_DestroyRenderer(renderer);
+    c.SDL_DestroyWindow(window);
+    c.SDL_Quit();
 }
 
-fn dvui_stuff() !void {
+fn dvui_floating_stuff() !void {
     var float = try dvui.floatingWindow(@src(), .{}, .{ .min_size_content = .{ .w = 400, .h = 400 } });
     defer float.deinit();
 
@@ -105,14 +126,9 @@ fn dvui_stuff() !void {
     }
     tl2.deinit();
 
-    if (dvui.Examples.show_demo_window) {
-        if (try dvui.button(@src(), "Hide Demo Window", .{}, .{})) {
-            dvui.Examples.show_demo_window = false;
-        }
-    } else {
-        if (try dvui.button(@src(), "Show Demo Window", .{}, .{})) {
-            dvui.Examples.show_demo_window = true;
-        }
+    const label = if (dvui.Examples.show_demo_window) "Hide Demo Window" else "Show Demo Window";
+    if (try dvui.button(@src(), label, .{}, .{})) {
+        dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
     }
 
     // look at demo() for examples of dvui widgets, shows in a floating window
@@ -125,7 +141,7 @@ fn app_init() !void {
         return error.BackendError;
     }
 
-    window = c.SDL_CreateWindow("DVUI Ontop Example", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, @as(c_int, @intCast(640)), @as(c_int, @intCast(480)), c.SDL_WINDOW_ALLOW_HIGHDPI | c.SDL_WINDOW_RESIZABLE) orelse {
+    window = c.SDL_CreateWindow("DVUI SDL Ontop Example", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, @as(c_int, @intCast(640)), @as(c_int, @intCast(480)), c.SDL_WINDOW_ALLOW_HIGHDPI | c.SDL_WINDOW_RESIZABLE) orelse {
         std.debug.print("Failed to open window: {s}\n", .{c.SDL_GetError()});
         return error.BackendError;
     };
