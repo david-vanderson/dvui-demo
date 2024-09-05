@@ -6,8 +6,8 @@
             //.url = "https://github.com/david-vanderson/dvui/archive/v0.1.0.tar.gz",
             //.hash = "1220809b3fef9e2ae3a3c86ad92daa5640f456749dc4cf25ae32d76e31e9d3495333",
 
-            .url = "https://github.com/david-vanderson/dvui/archive/3b029435d87043e6427390109f6865f6ec7bc9d3.tar.gz",
-            .hash = "1220ecd9b5c7438c8ff1b6623279e02a72983b98d3c08dbc946c6d162720b2f01f3a",
+            .url = "https://github.com/david-vanderson/dvui/archive/aa61ff280648c9f04f155d6285ba022c1b965759.tar.gz",
+            .hash = "12204837b026be1063d57ba282fe87c2e5881f3e8b82ddaf026a006e1f01c4b68416",
         },
     },
     .paths = .{""},
