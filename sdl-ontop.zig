@@ -1,12 +1,17 @@
 const std = @import("std");
 const dvui = @import("dvui");
-comptime { std.debug.assert(dvui.backend_kind == .sdl); }
+comptime {
+    std.debug.assert(dvui.backend_kind == .sdl);
+}
 const SDLBackend = dvui.backend;
 
 var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
 pub const c = SDLBackend.c;
+
+const vsync = false;
+const show_demo = false;
 
 var window: *c.SDL_Window = undefined;
 var renderer: *c.SDL_Renderer = undefined;
@@ -15,6 +20,8 @@ var renderer: *c.SDL_Renderer = undefined;
 /// - dvui renders only floating windows
 /// - framerate is managed by application, not dvui
 pub fn main() !void {
+    dvui.Examples.show_demo_window = show_demo;
+
     // app_init is a stand-in for what your application is already doing to set things up
     try app_init();
 
@@ -59,23 +66,24 @@ pub fn main() !void {
         _ = c.SDL_RenderClear(renderer);
 
         // draw some SDL stuff with dvui floating stuff in the middle
-        var rect: c.SDL_Rect = .{ .x = 10, .y = 10, .w = 20, .h = 20 };
+        const rect: c.SDL_Rect = .{ .x = 10, .y = 10, .w = 20, .h = 20 };
+        var rect2 = rect;
         _ = c.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        _ = c.SDL_RenderFillRect(renderer, &rect);
+        _ = c.SDL_RenderFillRect(renderer, &rect2);
 
         try dvui_floating_stuff();
 
-        rect.x += 24;
+        rect2.x += 24;
         _ = c.SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-        _ = c.SDL_RenderFillRect(renderer, &rect);
+        _ = c.SDL_RenderFillRect(renderer, &rect2);
 
-        rect.x += 24;
+        rect2.x += 24;
         _ = c.SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-        _ = c.SDL_RenderFillRect(renderer, &rect);
+        _ = c.SDL_RenderFillRect(renderer, &rect2);
 
         _ = c.SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
 
-        _ = c.SDL_RenderDrawLine(renderer, rect.x + 4, rect.y + 30, rect.x + 100, rect.y + 4);
+        _ = c.SDL_RenderDrawLine(renderer, rect.x, rect.y + 30, rect.x + 100, rect.y + 30);
 
         // marks end of dvui frame, don't call dvui functions after this
         // - sends all dvui stuff to backend for rendering, must be called before renderPresent()
@@ -89,6 +97,7 @@ pub fn main() !void {
             // cursor should be handled by application
             backend.setCursor(.bad);
         }
+        backend.textInputRect(win.textInputRequested());
 
         // render frame to OS
         backend.renderPresent();
@@ -100,7 +109,7 @@ pub fn main() !void {
 }
 
 fn dvui_floating_stuff() !void {
-    var float = try dvui.floatingWindow(@src(), .{}, .{ .min_size_content = .{ .w = 400, .h = 400 } });
+    var float = try dvui.floatingWindow(@src(), .{}, .{ .max_size_content = .{ .w = 400, .h = 400 } });
     defer float.deinit();
 
     try dvui.windowHeader("Floating Window", "", null);
@@ -116,7 +125,12 @@ fn dvui_floating_stuff() !void {
     var tl2 = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
     try tl2.addText("The dvui is painting only floating windows and dialogs.", .{});
     try tl2.addText("\n\n", .{});
-    try tl2.addText("Framerate is managed by the application (in this demo capped at vsync).", .{});
+    try tl2.addText("Framerate is managed by the application", .{});
+    if (vsync) {
+        try tl2.addText(" (capped at vsync)", .{});
+    } else {
+        try tl2.addText(" (uncapped - no vsync)", .{});
+    }
     try tl2.addText("\n\n", .{});
     try tl2.addText("Cursor is only being set by dvui for floating windows.", .{});
     try tl2.addText("\n\n", .{});
@@ -149,10 +163,11 @@ fn app_init() !void {
 
     _ = c.SDL_SetHint(c.SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
-    renderer = c.SDL_CreateRenderer(window, -1, c.SDL_RENDERER_PRESENTVSYNC) orelse {
+    renderer = c.SDL_CreateRenderer(window, -1, if (vsync) c.SDL_RENDERER_PRESENTVSYNC else 0) orelse {
         std.debug.print("Failed to create renderer: {s}\n", .{c.SDL_GetError()});
         return error.BackendError;
     };
 
-    _ = c.SDL_SetRenderDrawBlendMode(renderer, c.SDL_BLENDMODE_BLEND);
+    const pma_blend = c.SDL_ComposeCustomBlendMode(c.SDL_BLENDFACTOR_ONE, c.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, c.SDL_BLENDOPERATION_ADD, c.SDL_BLENDFACTOR_ONE, c.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, c.SDL_BLENDOPERATION_ADD);
+    _ = c.SDL_SetRenderDrawBlendMode(renderer, pma_blend);
 }

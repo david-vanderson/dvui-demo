@@ -10,14 +10,19 @@ const window_icon_png = @embedFile("zig-favicon.png");
 var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
-const vsync = true;
+const vsync = false;
+const show_demo = true;
+var scale_val: f32 = 1.0;
 
 var show_dialog_outside_frame: bool = false;
+var g_backend: ?Backend = null;
 
 /// This example shows how to use the dvui for a normal application:
 /// - dvui renders the whole application
 /// - render frames only when needed
 pub fn main() !void {
+    dvui.Examples.show_demo_window = show_demo;
+
     defer _ = gpa_instance.deinit();
 
     // init SDL backend (creates and owns OS window)
@@ -29,6 +34,7 @@ pub fn main() !void {
         .title = "DVUI SDL Standalone Example",
         .icon = window_icon_png, // can also call setIconFromFileContent()
     });
+    g_backend = backend;
     defer backend.deinit();
 
     // init dvui Window (maps onto a single OS window)
@@ -52,8 +58,8 @@ pub fn main() !void {
         _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 0, 0, 255);
         _ = Backend.c.SDL_RenderClear(backend.renderer);
 
-        // both dvui and SDL drawing
-        try gui_frame(backend);
+        // The demos we pass in here show up under "Platform-specific demos"
+        try gui_frame();
 
         // marks end of dvui frame, don't call dvui functions after this
         // - sends all dvui stuff to backend for rendering, must be called before renderPresent()
@@ -61,6 +67,7 @@ pub fn main() !void {
 
         // cursor management
         backend.setCursor(win.cursorRequested());
+        backend.textInputRect(win.textInputRequested());
 
         // render frame to OS
         backend.renderPresent();
@@ -77,7 +84,10 @@ pub fn main() !void {
     }
 }
 
-fn gui_frame(backend: Backend) !void {
+// both dvui and SDL drawing
+fn gui_frame() !void {
+    const backend = g_backend orelse return;
+
     {
         var m = try dvui.menu(@src(), .horizontal, .{ .background = true, .expand = .horizontal });
         defer m.deinit();
@@ -87,7 +97,7 @@ fn gui_frame(backend: Backend) !void {
             defer fw.deinit();
 
             if (try dvui.menuItemLabel(@src(), "Close Menu", .{}, .{}) != null) {
-                dvui.menuGet().?.close();
+                m.close();
             }
         }
 
@@ -140,7 +150,23 @@ fn gui_frame(backend: Backend) !void {
     }
 
     {
-        try dvui.labelNoFmt(@src(), "These are drawn directly by the backend, not going through DVUI.", .{ .margin = .{ .x = 4 } });
+        var scaler = try dvui.scale(@src(), scale_val, .{ .expand = .horizontal });
+        defer scaler.deinit();
+
+        {
+            var hbox = try dvui.box(@src(), .horizontal, .{});
+            defer hbox.deinit();
+
+            if (try dvui.button(@src(), "Zoom In", .{}, .{})) {
+                scale_val = @round(dvui.themeGet().font_body.size * scale_val + 1.0) / dvui.themeGet().font_body.size;
+            }
+
+            if (try dvui.button(@src(), "Zoom Out", .{}, .{})) {
+                scale_val = @round(dvui.themeGet().font_body.size * scale_val - 1.0) / dvui.themeGet().font_body.size;
+            }
+        }
+
+        try dvui.labelNoFmt(@src(), "Below is drawn directly by the backend, not going through DVUI.", .{ .margin = .{ .x = 4 } });
 
         var box = try dvui.box(@src(), .horizontal, .{ .expand = .horizontal, .min_size_content = .{ .h = 40 }, .background = true, .margin = .{ .x = 8, .w = 8 } });
         defer box.deinit();
@@ -153,7 +179,8 @@ fn gui_frame(backend: Backend) !void {
         // get the screen rectangle for the box
         const rs = box.data().contentRectScale();
 
-        // rs.r is the pixel rectangle, rs.s is the scale factor (like for hidpi screens or display scaling)
+        // rs.r is the pixel rectangle, rs.s is the scale factor (like for
+        // hidpi screens or display scaling)
         var rect: Backend.c.SDL_Rect = .{ .x = @intFromFloat(rs.r.x + 4 * rs.s), .y = @intFromFloat(rs.r.y + 4 * rs.s), .w = @intFromFloat(20 * rs.s), .h = @intFromFloat(20 * rs.s) };
         _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 0, 255);
         _ = Backend.c.SDL_RenderFillRect(backend.renderer, &rect);
@@ -168,7 +195,7 @@ fn gui_frame(backend: Backend) !void {
 
         _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 255, 255);
 
-        _ = Backend.c.SDL_RenderDrawLine(backend.renderer, @intFromFloat(rs.r.x + 4 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s), @intFromFloat(rs.r.x + rs.r.w - 8 * rs.s), @intFromFloat(rs.r.y + 4 * rs.s));
+        _ = Backend.c.SDL_RenderDrawLine(backend.renderer, @intFromFloat(rs.r.x + 4 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s), @intFromFloat(rs.r.x + rs.r.w - 8 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s));
     }
 
     if (try dvui.button(@src(), "Show Dialog From\nOutside Frame", .{}, .{})) {
