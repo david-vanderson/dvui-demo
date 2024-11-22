@@ -10,8 +10,8 @@ const window_icon_png = @embedFile("zig-favicon.png");
 var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
-const vsync = false;
-const show_demo = true;
+const vsync = true;
+const show_demo = false;
 var scale_val: f32 = 1.0;
 
 var show_dialog_outside_frame: bool = false;
