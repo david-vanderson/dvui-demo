@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize });
+    const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .sdl3 = true });
 
     const examples = [_][]const u8{
         "sdl-standalone",
