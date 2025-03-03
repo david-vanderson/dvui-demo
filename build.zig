@@ -19,6 +19,13 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
 
+        // Can either link the backend ourselves:
+        // const dvui_mod = dvui_dep.module("dvui");
+        // const sdl = dvui_dep.module("sdl");
+        // @import("dvui").linkBackend(dvui_mod, sdl);
+        // exe.root_module.addImport("dvui", dvui_mod);
+
+        // Or use a prelinked one:
         exe.root_module.addImport("dvui", dvui_dep.module("dvui_sdl"));
 
         const compile_step = b.step("compile-" ++ ex, "Compile " ++ ex);
