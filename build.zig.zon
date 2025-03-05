@@ -1,5 +1,6 @@
 .{
-    .name = "dvui-demo",
+    .name = .dvui_demo,
+    .fingerprint = 0x5157a5a9478a7694,
     .version = "0.0.1",
     .dependencies = .{
         .dvui = .{
