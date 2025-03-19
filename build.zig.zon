@@ -4,10 +4,11 @@
     .version = "0.0.1",
     .dependencies = .{
         .dvui = .{
+            //.path = "../dvui",
             //.url = "https://github.com/david-vanderson/dvui/archive/v0.2.0.tar.gz",
 
-            .url = "https://github.com/david-vanderson/dvui/archive/e6a3111343b0f717be7f7cbee0cfc077cac58199.tar.gz",
-            .hash = "dvui-0.2.0-AQFJmcpWygAJmp6FlcgveIfcFjHSq-pqEs0_2A7d2TVb",
+            .url = "https://github.com/david-vanderson/dvui/archive/84fc236f07c0758a4fd43e96aba732492db9c095.tar.gz",
+            .hash = "dvui-0.2.0-AQFJmZOHygADf_U6wNI8RngScjgYuW5mcKtNkuvDz0Vp",
         },
     },
     .paths = .{""},
