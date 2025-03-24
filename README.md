@@ -12,3 +12,5 @@ This repo serves as an example for how to integrate [dvui](https://github.com/da
   - you want to add some gui stuff (like floating windows to for debugging)
   - use this example for integration
 
+- `zig build web-test`
+  - you want to put an app or game in a web canvas
