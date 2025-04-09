@@ -88,7 +88,7 @@ pub fn main() !void {
         // Example of how to show a dialog from another thread (outside of win.begin/win.end)
         if (show_dialog_outside_frame) {
             show_dialog_outside_frame = false;
-            try dvui.dialog(@src(), .{ .window = &win, .modal = false, .title = "Dialog from Outside", .message = "This is a non modal dialog that was created outside win.begin()/win.end(), usually from another thread." });
+            try dvui.dialog(@src(), .{}, .{ .window = &win, .modal = false, .title = "Dialog from Outside", .message = "This is a non modal dialog that was created outside win.begin()/win.end(), usually from another thread." });
         }
     }
 }
@@ -102,7 +102,7 @@ fn gui_frame() !void {
         defer m.deinit();
 
         if (try dvui.menuItemLabel(@src(), "File", .{ .submenu = true }, .{ .expand = .none })) |r| {
-            var fw = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+            var fw = try dvui.floatingMenu(@src(), .{ .from = r }, .{});
             defer fw.deinit();
 
             if (try dvui.menuItemLabel(@src(), "Close Menu", .{}, .{}) != null) {
@@ -111,7 +111,7 @@ fn gui_frame() !void {
         }
 
         if (try dvui.menuItemLabel(@src(), "Edit", .{ .submenu = true }, .{ .expand = .none })) |r| {
-            var fw = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+            var fw = try dvui.floatingMenu(@src(), .{ .from = r }, .{});
             defer fw.deinit();
             _ = try dvui.menuItemLabel(@src(), "Dummy", .{}, .{ .expand = .horizontal });
             _ = try dvui.menuItemLabel(@src(), "Dummy Long", .{}, .{ .expand = .horizontal });

@@ -8,15 +8,22 @@ pub fn build(b: *std.Build) !void {
     {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl, .sdl3 = true });
 
-        const examples = [_][]const u8{
+        const names = [_][]const u8{
             "sdl-standalone",
             "sdl-ontop",
+            "sdl-app",
         };
 
-        inline for (examples) |ex| {
+        const files = [_]std.Build.LazyPath{
+            b.path("sdl-standalone.zig"),
+            b.path("sdl-ontop.zig"),
+            b.path("app.zig"),
+        };
+
+        inline for (names, 0..) |name, i| {
             const exe = b.addExecutable(.{
-                .name = ex,
-                .root_source_file = b.path("sdl/" ++ ex ++ ".zig"),
+                .name = name,
+                .root_source_file = files[i],
                 .target = target,
                 .optimize = optimize,
             });
@@ -30,14 +37,14 @@ pub fn build(b: *std.Build) !void {
             // Or use a prelinked one:
             exe.root_module.addImport("dvui", dvui_dep.module("dvui_sdl"));
 
-            const compile_step = b.step("compile-" ++ ex, "Compile " ++ ex);
+            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
             b.getInstallStep().dependOn(compile_step);
 
             const run_cmd = b.addRunArtifact(exe);
             run_cmd.step.dependOn(compile_step);
 
-            const run_step = b.step(ex, "Run " ++ ex);
+            const run_step = b.step(name, "Run " ++ name);
             run_step.dependOn(&run_cmd.step);
         }
     }
@@ -52,8 +59,8 @@ pub fn build(b: *std.Build) !void {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .web });
 
         const web_test = b.addExecutable(.{
-            .name = "web-test",
-            .root_source_file = b.path("web/web-test.zig"),
+            .name = "web",
+            .root_source_file = b.path("app.zig"),
             .target = web_target,
             .optimize = optimize,
             .link_libc = false,
@@ -67,12 +74,12 @@ pub fn build(b: *std.Build) !void {
             .dest_dir = .{ .override = .{ .custom = "bin" } },
         });
 
-        const install_noto = b.addInstallBinFile(b.path("web/NotoSansKR-Regular.ttf"), "NotoSansKR-Regular.ttf");
+        const install_noto = b.addInstallBinFile(b.path("NotoSansKR-Regular.ttf"), "NotoSansKR-Regular.ttf");
 
-        const compile_step = b.step("web-test", "Compile the Web test");
+        const compile_step = b.step("web-app", "Compile the Web app");
         compile_step.dependOn(&install_wasm.step);
         compile_step.dependOn(&install_noto.step);
-        compile_step.dependOn(&b.addInstallFileWithDir(b.path("web/index.html"), .prefix, "bin/index.html").step);
+        compile_step.dependOn(&b.addInstallFileWithDir(b.path("index.html"), .prefix, "bin/index.html").step);
         const web_js = dvui_dep.namedLazyPath("web.js");
         compile_step.dependOn(&b.addInstallFileWithDir(web_js, .prefix, "bin/web.js").step);
         b.getInstallStep().dependOn(compile_step);
