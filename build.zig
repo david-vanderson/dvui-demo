@@ -49,6 +49,44 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
+    // Raylib Examples
+    {
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .raylib });
+
+        const names = [_][]const u8{
+            "raylib-standalone",
+            "raylib-ontop",
+            "raylib-app",
+        };
+
+        const files = [_]std.Build.LazyPath{
+            b.path("raylib-standalone.zig"),
+            b.path("raylib-ontop.zig"),
+            b.path("app.zig"),
+        };
+
+        inline for (names, 0..) |name, i| {
+            const exe = b.addExecutable(.{
+                .name = name,
+                .root_source_file = files[i],
+                .target = target,
+                .optimize = optimize,
+            });
+
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_raylib"));
+
+            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
+            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+            b.getInstallStep().dependOn(compile_step);
+
+            const run_cmd = b.addRunArtifact(exe);
+            run_cmd.step.dependOn(compile_step);
+
+            const run_step = b.step(name, "Run " ++ name);
+            run_step.dependOn(&run_cmd.step);
+        }
+    }
+
     // Web Example
     {
         const web_target = b.resolveTargetQuery(.{
