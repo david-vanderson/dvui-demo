@@ -4,6 +4,25 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const test_step = b.step("test", "Test the examples");
+
+    // Testing
+    {
+        // dvui's testing backend doesn't draw anything, for testing behavior
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .testing });
+
+        const mod = b.createModule(.{
+            .root_source_file = b.path("app.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+
+        mod.addImport("dvui", dvui_dep.module("dvui_testing"));
+
+        const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = "testing-app" }));
+        test_step.dependOn(&test_cmd.step);
+    }
+
     // SDL Examples
     {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl3 });
@@ -21,21 +40,25 @@ pub fn build(b: *std.Build) !void {
         };
 
         inline for (names, 0..) |name, i| {
-            const exe = b.addExecutable(.{
-                .name = name,
+            const mod = b.createModule(.{
                 .root_source_file = files[i],
                 .target = target,
                 .optimize = optimize,
             });
 
+            const exe = b.addExecutable(.{
+                .name = name,
+                .root_module = mod,
+            });
+
             // Can either link the backend ourselves:
             // const dvui_mod = dvui_dep.module("dvui");
-            // const sdl = dvui_dep.module("sdl");
-            // @import("dvui").linkBackend(dvui_mod, sdl);
-            // exe.root_module.addImport("dvui", dvui_mod);
+            // const sdl3_mod = dvui_dep.module("sdl3");
+            // @import("dvui").linkBackend(dvui_mod, sdl3_mod);
+            // mod.addImport("dvui", dvui_mod);
 
             // Or use a prelinked one:
-            exe.root_module.addImport("dvui", dvui_dep.module("dvui_sdl3"));
+            mod.addImport("dvui", dvui_dep.module("dvui_sdl3"));
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -46,6 +69,10 @@ pub fn build(b: *std.Build) !void {
 
             const run_step = b.step(name, "Run " ++ name);
             run_step.dependOn(&run_cmd.step);
+
+            // This runs the tests in the examples with the sdl3 backend
+            const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = name }));
+            test_step.dependOn(&test_cmd.step);
         }
     }
 
