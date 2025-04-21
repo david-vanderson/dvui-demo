@@ -6,12 +6,12 @@ pub fn build(b: *std.Build) !void {
 
     // SDL Examples
     {
-        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl, .sdl3 = true });
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl3 });
 
         const names = [_][]const u8{
-            "sdl-standalone",
-            "sdl-ontop",
-            "sdl-app",
+            "sdl3-standalone",
+            "sdl3-ontop",
+            "sdl3-app",
         };
 
         const files = [_]std.Build.LazyPath{
@@ -35,7 +35,7 @@ pub fn build(b: *std.Build) !void {
             // exe.root_module.addImport("dvui", dvui_mod);
 
             // Or use a prelinked one:
-            exe.root_module.addImport("dvui", dvui_dep.module("dvui_sdl"));
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_sdl3"));
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -56,7 +56,7 @@ pub fn build(b: *std.Build) !void {
             .os_tag = .freestanding,
         });
 
-        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .web });
+        const dvui_dep = b.dependency("dvui", .{ .target = web_target, .optimize = optimize, .backend = .web });
 
         const web_test = b.addExecutable(.{
             .name = "web",

@@ -20,6 +20,7 @@ pub const dvui_app: dvui.App = .{
     .deinitFn = AppDeinit,
 };
 pub const main = dvui.App.main;
+pub const panic = dvui.App.panic;
 pub const std_options: std.Options = .{
     .logFn = dvui.App.logFn,
 };
@@ -36,15 +37,11 @@ pub fn AppInit(win: *dvui.Window) void {
 pub fn AppDeinit() void {}
 
 // Run each frame to do normal UI
-pub fn AppFrame() dvui.App.Result {
-    frame() catch |err| {
-        std.log.err("in frame: {!}", .{err});
-        return .close;
-    };
-    return .ok;
+pub fn AppFrame() !dvui.App.Result {
+    return frame();
 }
 
-pub fn frame() !void {
+pub fn frame() !dvui.App.Result {
     var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .{ .name = .fill_window } });
     defer scroll.deinit();
 
@@ -52,7 +49,10 @@ pub fn frame() !void {
     const lorem = "This is a dvui.App example that can compile on multiple backends.";
     try tl.addText(lorem, .{});
     try tl.addText("\n\n", .{});
-    try tl.format("Current backend {s} : {s}", .{ @tagName(dvui.backend.kind), dvui.backend.description() }, .{});
+    try tl.format("Current backend: {s}", .{@tagName(dvui.backend.kind)}, .{});
+    if (dvui.backend.kind == .web) {
+        try tl.format(" : {s}", .{if (dvui.backend.wasm.wasm_about_webgl2() == 1) "webgl2" else "webgl (no mipmaps)"}, .{});
+    }
     tl.deinit();
 
     var tl2 = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
@@ -77,10 +77,63 @@ pub fn frame() !void {
     tl2.deinit();
 
     const label = if (dvui.Examples.show_demo_window) "Hide Demo Window" else "Show Demo Window";
-    if (try dvui.button(@src(), label, .{}, .{})) {
+    if (try dvui.button(@src(), label, .{}, .{ .tag = "show-demo-btn" })) {
         dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
+    }
+
+    //if (try dvui.button(@src(), "Panic", .{}, .{})) {
+    //std.debug.panic("This is a panic message after {d}s", .{@divTrunc(dvui.currentWindow().frame_time_ns, std.time.ns_per_s)});
+    //}
+    if (try dvui.button(@src(), if (dvui.backend.kind == .web) "Stop" else "Close", .{}, .{})) {
+        return .close;
     }
 
     // look at demo() for examples of dvui widgets, shows in a floating window
     try dvui.Examples.demo();
+
+    return .ok;
+}
+
+test "tab order" {
+    var t = try dvui.testing.init(.{});
+    defer t.deinit();
+
+    try dvui.testing.settle(frame);
+
+    try dvui.testing.pressKey(.tab, .none);
+    try dvui.testing.settle(frame);
+
+    try dvui.testing.expectFocused("show-demo-btn");
+}
+
+test "open example window" {
+    var t = try dvui.testing.init(.{});
+    defer t.deinit();
+
+    try dvui.testing.settle(frame);
+
+    try dvui.testing.moveTo("show-demo-btn");
+    try dvui.testing.click(.left);
+    try dvui.testing.settle(frame);
+
+    try dvui.testing.expectVisible(dvui.Examples.demo_window_tag);
+}
+
+test "snapshot" {
+    // snapshot tests are unstable
+    var t = try dvui.testing.init(.{});
+    defer t.deinit();
+
+    // FIXME: The global show_demo_window variable makes tests order dependent
+    dvui.Examples.show_demo_window = false;
+
+    try dvui.testing.settle(frame);
+
+    // Try swapping the names of ./snapshots/app.zig-test.snapshot-X.png
+    try t.snapshot(@src(), frame);
+
+    try dvui.testing.pressKey(.tab, .none);
+    try dvui.testing.settle(frame);
+
+    try t.snapshot(@src(), frame);
 }
