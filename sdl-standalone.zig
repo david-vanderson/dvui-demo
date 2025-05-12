@@ -46,6 +46,8 @@ pub fn main() !void {
     g_backend = backend;
     defer backend.deinit();
 
+    _ = Backend.c.SDL_EnableScreenSaver();
+
     // init dvui Window (maps onto a single OS window)
     var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{});
     defer win.deinit();
@@ -119,7 +121,7 @@ fn gui_frame() !void {
         }
     }
 
-    var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .{ .name = .fill_window } });
+    var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .fill_window });
     defer scroll.deinit();
 
     var tl = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -159,7 +161,7 @@ fn gui_frame() !void {
     }
 
     {
-        var scaler = try dvui.scale(@src(), scale_val, .{ .expand = .horizontal });
+        var scaler = try dvui.scale(@src(), .{ .scale = &scale_val }, .{ .expand = .horizontal });
         defer scaler.deinit();
 
         {
