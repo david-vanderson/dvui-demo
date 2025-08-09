@@ -18,6 +18,7 @@ pub fn build(b: *std.Build) !void {
         });
 
         mod.addImport("dvui", dvui_dep.module("dvui_testing"));
+        mod.addImport("backend", dvui_dep.module("testing"));
 
         const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = "testing-app" }));
         test_step.dependOn(&test_cmd.step);
@@ -59,6 +60,7 @@ pub fn build(b: *std.Build) !void {
 
             // Or use a prelinked one:
             mod.addImport("dvui", dvui_dep.module("dvui_sdl3"));
+            mod.addImport("sdl-backend", dvui_dep.module("sdl3"));
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -101,6 +103,7 @@ pub fn build(b: *std.Build) !void {
             });
 
             exe.root_module.addImport("dvui", dvui_dep.module("dvui_raylib"));
+            exe.root_module.addImport("raylib-backend", dvui_dep.module("raylib"));
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -134,6 +137,7 @@ pub fn build(b: *std.Build) !void {
 
         web_test.entry = .disabled;
         web_test.root_module.addImport("dvui", dvui_dep.module("dvui_web"));
+        web_test.root_module.addImport("web-backend", dvui_dep.module("web"));
 
         const install_wasm = b.addInstallArtifact(web_test, .{
             .dest_dir = .{ .override = .{ .custom = "bin" } },
