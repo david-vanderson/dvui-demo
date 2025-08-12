@@ -1,6 +1,6 @@
 const std = @import("std");
 const dvui = @import("dvui");
-const RaylibBackend = @import("raylib-backend");
+const RaylibBackend = dvui.backend;
 comptime {
     std.debug.assert(@hasDecl(RaylibBackend, "RaylibBackend"));
 }
@@ -12,6 +12,10 @@ const window_icon_png = @embedFile("zig-favicon.png");
 //Figure out the best way to integrate raylib and dvui Event Handling
 
 pub fn main() !void {
+    if (@import("builtin").os.tag == .windows) { // optional
+        // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
+        try dvui.Backend.Common.windowsAttachConsole();
+    }
     var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
     const gpa = gpa_instance.allocator();
 
@@ -54,10 +58,10 @@ pub fn main() !void {
         }
         // if dvui widgets might not cover the whole window, then need to clear
         // the previous frame's render
-        ray.ClearBackground(RaylibBackend.dvuiColorToRaylib(dvui.themeGet().color_fill_window));
+        ray.ClearBackground(RaylibBackend.dvuiColorToRaylib(dvui.Color.black));
 
         {
-            var b = dvui.box(@src(), .vertical, .{ .expand = .horizontal, .margin = .{ .x = 10 } });
+            var b = dvui.box(@src(), .{}, .{ .expand = .horizontal, .margin = .{ .x = 10 } });
             defer b.deinit();
 
             if (ray.GuiIsLocked()) {
@@ -107,11 +111,11 @@ fn colorPicker(result: *dvui.Color) void {
     const color_hex = result.toHexString();
 
     {
-        var hbox = dvui.box(@src(), .horizontal, .{});
+        var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
         defer hbox.deinit();
 
         dvui.labelNoFmt(@src(), &color_hex, .{}, .{
-            .color_text = .{ .color = result.* },
+            .color_text = result.*,
             .gravity_y = 0.5,
         });
 
@@ -130,7 +134,7 @@ fn dvuiStuff() void {
 
     float.dragAreaSet(dvui.windowHeader("Floating Window", "", null));
 
-    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .fill_window });
+    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     defer scroll.deinit();
 
     var tl = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -155,6 +159,10 @@ fn dvuiStuff() void {
     const label = if (dvui.Examples.show_demo_window) "Hide Demo Window" else "Show Demo Window";
     if (dvui.button(@src(), label, .{}, .{})) {
         dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
+    }
+
+    if (dvui.button(@src(), "Debug Window", .{}, .{})) {
+        dvui.toggleDebugWindow();
     }
 
     // look at demo() for examples of dvui widgets, shows in a floating window

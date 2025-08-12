@@ -1,9 +1,9 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const dvui = @import("dvui");
-const SDLBackend = @import("sdl-backend");
+const Backend = dvui.backend;
 comptime {
-    std.debug.assert(@hasDecl(SDLBackend, "SDLBackend"));
+    std.debug.assert(@hasDecl(Backend, "SDLBackend"));
 }
 
 const window_icon_png = @embedFile("zig-favicon.png");
@@ -16,7 +16,7 @@ const show_demo = true;
 var scale_val: f32 = 1.0;
 
 var show_dialog_outside_frame: bool = false;
-var g_backend: ?SDLBackend = null;
+var g_backend: ?Backend = null;
 var g_win: ?*dvui.Window = null;
 
 /// This example shows how to use the dvui for a normal application:
@@ -26,16 +26,16 @@ var g_win: ?*dvui.Window = null;
 pub fn main() !void {
     if (@import("builtin").os.tag == .windows) { // optional
         // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
-        _ = winapi.AttachConsole(0xFFFFFFFF);
+        dvui.Backend.Common.windowsAttachConsole() catch {};
     }
-    std.log.info("SDL version: {}", .{SDLBackend.getSDLVersion()});
+    std.log.info("SDL version: {}", .{Backend.getSDLVersion()});
 
     dvui.Examples.show_demo_window = show_demo;
 
     defer if (gpa_instance.deinit() != .ok) @panic("Memory leak on exit!");
 
     // init SDL backend (creates and owns OS window)
-    var backend = try SDLBackend.initWindow(.{
+    var backend = try Backend.initWindow(.{
         .allocator = gpa,
         .size = .{ .w = 800.0, .h = 600.0 },
         .min_size = .{ .w = 250.0, .h = 350.0 },
@@ -46,10 +46,16 @@ pub fn main() !void {
     g_backend = backend;
     defer backend.deinit();
 
-    _ = SDLBackend.c.SDL_EnableScreenSaver();
+    _ = Backend.c.SDL_EnableScreenSaver();
 
     // init dvui Window (maps onto a single OS window)
-    var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{});
+    var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{
+        // you can set the default theme here in the init options
+        .theme = switch (backend.preferredColorScheme() orelse .light) {
+            .light => dvui.Theme.builtin.adwaita_light,
+            .dark => dvui.Theme.builtin.adwaita_dark,
+        },
+    });
     defer win.deinit();
 
     var interrupted = false;
@@ -68,11 +74,11 @@ pub fn main() !void {
 
         // if dvui widgets might not cover the whole window, then need to clear
         // the previous frame's render
-        _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 0, 0, 255);
-        _ = SDLBackend.c.SDL_RenderClear(backend.renderer);
+        _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 0, 0, 255);
+        _ = Backend.c.SDL_RenderClear(backend.renderer);
 
-        // The demos we pass in here show up under "Platform-specific demos"
-        gui_frame();
+        const keep_running = gui_frame();
+        if (!keep_running) break :main_loop;
 
         // marks end of dvui frame, don't call dvui functions after this
         // - sends all dvui stuff to backend for rendering, must be called before renderPresent()
@@ -86,7 +92,7 @@ pub fn main() !void {
         try backend.renderPresent();
 
         // waitTime and beginWait combine to achieve variable framerates
-        const wait_event_micros = win.waitTime(end_micros, null);
+        const wait_event_micros = win.waitTime(end_micros);
         interrupted = try backend.waitEventTimeout(wait_event_micros);
 
         // Example of how to show a dialog from another thread (outside of win.begin/win.end)
@@ -98,8 +104,9 @@ pub fn main() !void {
 }
 
 // both dvui and SDL drawing
-fn gui_frame() void {
-    const backend = g_backend orelse return;
+// return false if user wants to exit the app
+fn gui_frame() bool {
+    const backend = g_backend orelse return false;
 
     {
         var m = dvui.menu(@src(), .horizontal, .{ .background = true, .expand = .horizontal });
@@ -109,8 +116,12 @@ fn gui_frame() void {
             var fw = dvui.floatingMenu(@src(), .{ .from = r }, .{});
             defer fw.deinit();
 
-            if (dvui.menuItemLabel(@src(), "Close Menu", .{}, .{}) != null) {
+            if (dvui.menuItemLabel(@src(), "Close Menu", .{}, .{ .expand = .horizontal }) != null) {
                 m.close();
+            }
+
+            if (dvui.menuItemLabel(@src(), "Exit", .{}, .{ .expand = .horizontal }) != null) {
+                return false;
             }
         }
 
@@ -123,7 +134,7 @@ fn gui_frame() void {
         }
     }
 
-    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .fill_window });
+    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     defer scroll.deinit();
 
     var tl = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -162,12 +173,16 @@ fn gui_frame() void {
         dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
     }
 
+    if (dvui.button(@src(), "Debug Window", .{}, .{})) {
+        dvui.toggleDebugWindow();
+    }
+
     {
         var scaler = dvui.scale(@src(), .{ .scale = &scale_val }, .{ .expand = .horizontal });
         defer scaler.deinit();
 
         {
-            var hbox = dvui.box(@src(), .horizontal, .{});
+            var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
             defer hbox.deinit();
 
             if (dvui.button(@src(), "Zoom In", .{}, .{})) {
@@ -181,7 +196,7 @@ fn gui_frame() void {
 
         dvui.labelNoFmt(@src(), "Below is drawn directly by the backend, not going through DVUI.", .{}, .{ .margin = .{ .x = 4 } });
 
-        var box = dvui.box(@src(), .horizontal, .{ .expand = .horizontal, .min_size_content = .{ .h = 40 }, .background = true, .margin = .{ .x = 8, .w = 8 } });
+        var box = dvui.box(@src(), .{ .dir = .horizontal }, .{ .expand = .horizontal, .min_size_content = .{ .h = 40 }, .background = true, .margin = .{ .x = 8, .w = 8 } });
         defer box.deinit();
 
         // Here is some arbitrary drawing that doesn't have to go through DVUI.
@@ -194,8 +209,8 @@ fn gui_frame() void {
 
         // rs.r is the pixel rectangle, rs.s is the scale factor (like for
         // hidpi screens or display scaling)
-        var rect: if (SDLBackend.sdl3) SDLBackend.c.SDL_FRect else SDLBackend.c.SDL_Rect = undefined;
-        if (SDLBackend.sdl3) rect = .{
+        var rect: if (Backend.sdl3) Backend.c.SDL_FRect else Backend.c.SDL_Rect = undefined;
+        if (Backend.sdl3) rect = .{
             .x = (rs.r.x + 4 * rs.s),
             .y = (rs.r.y + 4 * rs.s),
             .w = (20 * rs.s),
@@ -206,23 +221,23 @@ fn gui_frame() void {
             .w = @intFromFloat(20 * rs.s),
             .h = @intFromFloat(20 * rs.s),
         };
-        _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 0, 255);
-        _ = SDLBackend.c.SDL_RenderFillRect(backend.renderer, &rect);
+        _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 0, 255);
+        _ = Backend.c.SDL_RenderFillRect(backend.renderer, &rect);
 
-        rect.x += if (SDLBackend.sdl3) 24 * rs.s else @intFromFloat(24 * rs.s);
-        _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 255, 0, 255);
-        _ = SDLBackend.c.SDL_RenderFillRect(backend.renderer, &rect);
+        rect.x += if (Backend.sdl3) 24 * rs.s else @intFromFloat(24 * rs.s);
+        _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 255, 0, 255);
+        _ = Backend.c.SDL_RenderFillRect(backend.renderer, &rect);
 
-        rect.x += if (SDLBackend.sdl3) 24 * rs.s else @intFromFloat(24 * rs.s);
-        _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 0, 255, 255);
-        _ = SDLBackend.c.SDL_RenderFillRect(backend.renderer, &rect);
+        rect.x += if (Backend.sdl3) 24 * rs.s else @intFromFloat(24 * rs.s);
+        _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 0, 255, 255);
+        _ = Backend.c.SDL_RenderFillRect(backend.renderer, &rect);
 
-        _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 255, 255);
+        _ = Backend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 255, 255);
 
-        if (SDLBackend.sdl3)
-            _ = SDLBackend.c.SDL_RenderLine(backend.renderer, (rs.r.x + 4 * rs.s), (rs.r.y + 30 * rs.s), (rs.r.x + rs.r.w - 8 * rs.s), (rs.r.y + 30 * rs.s))
+        if (Backend.sdl3)
+            _ = Backend.c.SDL_RenderLine(backend.renderer, (rs.r.x + 4 * rs.s), (rs.r.y + 30 * rs.s), (rs.r.x + rs.r.w - 8 * rs.s), (rs.r.y + 30 * rs.s))
         else
-            _ = SDLBackend.c.SDL_RenderDrawLine(backend.renderer, @intFromFloat(rs.r.x + 4 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s), @intFromFloat(rs.r.x + rs.r.w - 8 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s));
+            _ = Backend.c.SDL_RenderDrawLine(backend.renderer, @intFromFloat(rs.r.x + 4 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s), @intFromFloat(rs.r.x + rs.r.w - 8 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s));
     }
 
     if (dvui.button(@src(), "Show Dialog From\nOutside Frame", .{}, .{})) {
@@ -231,9 +246,6 @@ fn gui_frame() void {
 
     // look at demo() for examples of dvui widgets, shows in a floating window
     dvui.Examples.demo();
-}
 
-// Optional: windows os only
-const winapi = if (builtin.os.tag == .windows) struct {
-    extern "kernel32" fn AttachConsole(dwProcessId: std.os.windows.DWORD) std.os.windows.BOOL;
-} else struct {};
+    return true;
+}

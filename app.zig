@@ -9,12 +9,18 @@ const window_icon_png = @embedFile("zig-favicon.png");
 // * expose the backend's main function
 // * use the backend's log function
 pub const dvui_app: dvui.App = .{
-    .config = .{ .options = .{
-        .size = .{ .w = 800.0, .h = 600.0 },
-        .min_size = .{ .w = 250.0, .h = 350.0 },
-        .title = "DVUI App Example",
-        .icon = window_icon_png,
-    } },
+    .config = .{
+        .options = .{
+            .size = .{ .w = 800.0, .h = 600.0 },
+            .min_size = .{ .w = 250.0, .h = 350.0 },
+            .title = "DVUI App Example",
+            .icon = window_icon_png,
+            .window_init_options = .{
+                // Could set a default theme here
+                // .theme = dvui.Theme.builtin.dracula,
+            },
+        },
+    },
     .frameFn = AppFrame,
     .initFn = AppInit,
     .deinitFn = AppDeinit,
@@ -35,6 +41,14 @@ var orig_content_scale: f32 = 1.0;
 pub fn AppInit(win: *dvui.Window) !void {
     orig_content_scale = win.content_scale;
     //try dvui.addFont("NOTO", @embedFile("../src/fonts/NotoSansKR-Regular.ttf"), null);
+
+    if (false) {
+        // If you need to set a theme based on the users preferred color scheme, do it here
+        win.theme = switch (win.backend.preferredColorScheme() orelse .light) {
+            .light => dvui.Theme.builtin.adwaita_light,
+            .dark => dvui.Theme.builtin.adwaita_dark,
+        };
+    }
 }
 
 // Run as app is shutting down before dvui.Window.deinit()
@@ -49,7 +63,27 @@ pub fn frame() !dvui.App.Result {
     var scaler = dvui.scale(@src(), .{ .scale = &dvui.currentWindow().content_scale, .pinch_zoom = .global }, .{ .rect = .cast(dvui.windowRect()) });
     scaler.deinit();
 
-    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .fill_window });
+    {
+        var m = dvui.menu(@src(), .horizontal, .{ .background = true, .expand = .horizontal });
+        defer m.deinit();
+
+        if (dvui.menuItemLabel(@src(), "File", .{ .submenu = true }, .{ .tag = "first-focusable" })) |r| {
+            var fw = dvui.floatingMenu(@src(), .{ .from = r }, .{});
+            defer fw.deinit();
+
+            if (dvui.menuItemLabel(@src(), "Close Menu", .{}, .{ .expand = .horizontal }) != null) {
+                m.close();
+            }
+
+            if (dvui.backend.kind != .web) {
+                if (dvui.menuItemLabel(@src(), "Exit", .{}, .{ .expand = .horizontal }) != null) {
+                    return .close;
+                }
+            }
+        }
+    }
+
+    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .style = .window });
     defer scroll.deinit();
 
     var tl = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -88,8 +122,12 @@ pub fn frame() !dvui.App.Result {
         dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
     }
 
+    if (dvui.button(@src(), "Debug Window", .{}, .{})) {
+        dvui.toggleDebugWindow();
+    }
+
     {
-        var hbox = dvui.box(@src(), .horizontal, .{});
+        var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
         defer hbox.deinit();
         dvui.label(@src(), "Pinch Zoom or Scale", .{}, .{});
         if (dvui.buttonIcon(@src(), "plus", dvui.entypo.plus, .{}, .{}, .{})) {
@@ -107,15 +145,6 @@ pub fn frame() !dvui.App.Result {
         }
     }
 
-    //if (dvui.button(@src(), "Panic", .{}, .{})) {
-    //std.debug.panic("This is a panic message after {d}s", .{@divTrunc(dvui.currentWindow().frame_time_ns, std.time.ns_per_s)});
-    //}
-    if (dvui.backend.kind != .web) {
-        if (dvui.button(@src(), "Close", .{}, .{})) {
-            return .close;
-        }
-    }
-
     // look at demo() for examples of dvui widgets, shows in a floating window
     dvui.Examples.demo();
 
@@ -128,12 +157,12 @@ test "tab order" {
 
     try dvui.testing.settle(frame);
 
-    try dvui.testing.expectNotFocused("show-demo-btn");
+    try dvui.testing.expectNotFocused("first-focusable");
 
     try dvui.testing.pressKey(.tab, .none);
     try dvui.testing.settle(frame);
 
-    try dvui.testing.expectFocused("show-demo-btn");
+    try dvui.testing.expectFocused("first-focusable");
 }
 
 test "open example window" {

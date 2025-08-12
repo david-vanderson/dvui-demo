@@ -1,6 +1,6 @@
 const std = @import("std");
 const dvui = @import("dvui");
-const SDLBackend = @import("sdl-backend");
+const SDLBackend = dvui.backend;
 comptime {
     std.debug.assert(@hasDecl(SDLBackend, "SDLBackend"));
 }
@@ -20,6 +20,10 @@ var renderer: *c.SDL_Renderer = undefined;
 /// - dvui renders only floating windows
 /// - framerate is managed by application, not dvui
 pub fn main() !void {
+    if (@import("builtin").os.tag == .windows) { // optional
+        // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
+        dvui.Backend.Common.windowsAttachConsole() catch {};
+    }
     dvui.Examples.show_demo_window = show_demo;
 
     // app_init is a stand-in for what your application is already doing to set things up
@@ -118,7 +122,7 @@ fn dvui_floating_stuff() void {
 
     float.dragAreaSet(dvui.windowHeader("Floating Window", "", null));
 
-    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .fill_window });
+    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     defer scroll.deinit();
 
     var tl = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -148,6 +152,10 @@ fn dvui_floating_stuff() void {
     const label = if (dvui.Examples.show_demo_window) "Hide Demo Window" else "Show Demo Window";
     if (dvui.button(@src(), label, .{}, .{})) {
         dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
+    }
+
+    if (dvui.button(@src(), "Debug Window", .{}, .{})) {
+        dvui.toggleDebugWindow();
     }
 
     // look at demo() for examples of dvui widgets, shows in a floating window

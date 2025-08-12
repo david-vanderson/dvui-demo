@@ -1,6 +1,6 @@
 const std = @import("std");
 const dvui = @import("dvui");
-const RaylibBackend = @import("raylib-backend");
+const RaylibBackend = dvui.backend;
 comptime {
     std.debug.assert(@hasDecl(RaylibBackend, "RaylibBackend"));
 }
@@ -21,6 +21,10 @@ pub const c = RaylibBackend.c;
 /// - dvui renders the whole application
 /// - render frames only when needed
 pub fn main() !void {
+    if (@import("builtin").os.tag == .windows) { // optional
+        // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
+        dvui.Backend.Common.windowsAttachConsole() catch {};
+    }
     defer _ = gpa_instance.deinit();
 
     // init Raylib backend (creates OS window)
@@ -36,7 +40,13 @@ pub fn main() !void {
     backend.log_events = true;
 
     // init dvui Window (maps onto a single OS window)
-    var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{});
+    var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{
+        // you can set the default theme here in the init options
+        .theme = switch (backend.preferredColorScheme() orelse .light) {
+            .light => dvui.Theme.builtin.adwaita_light,
+            .dark => dvui.Theme.builtin.adwaita_dark,
+        },
+    });
     defer win.deinit();
 
     main_loop: while (true) {
@@ -61,7 +71,8 @@ pub fn main() !void {
         // the previous frame's render
         backend.clear();
 
-        dvui_frame();
+        const keep_running = dvui_frame();
+        if (!keep_running) break :main_loop;
 
         // marks end of dvui frame, don't call dvui functions after this
         // - sends all dvui stuff to backend for rendering, must be called before renderPresent()
@@ -71,7 +82,7 @@ pub fn main() !void {
         backend.setCursor(win.cursorRequested());
 
         // waitTime and beginWait combine to achieve variable framerates
-        const wait_event_micros = win.waitTime(end_micros, null);
+        const wait_event_micros = win.waitTime(end_micros);
         backend.EndDrawingWaitEventTimeout(wait_event_micros);
 
         // Example of how to show a dialog from another thread (outside of win.begin/win.end)
@@ -82,7 +93,8 @@ pub fn main() !void {
     }
 }
 
-fn dvui_frame() void {
+// return true to keep running
+fn dvui_frame() bool {
     {
         var m = dvui.menu(@src(), .horizontal, .{ .background = true, .expand = .horizontal });
         defer m.deinit();
@@ -91,8 +103,12 @@ fn dvui_frame() void {
             var fw = dvui.floatingMenu(@src(), .{ .from = r }, .{});
             defer fw.deinit();
 
-            if (dvui.menuItemLabel(@src(), "Close Menu", .{}, .{}) != null) {
+            if (dvui.menuItemLabel(@src(), "Close Menu", .{}, .{ .expand = .horizontal }) != null) {
                 m.close();
+            }
+
+            if (dvui.menuItemLabel(@src(), "Exit", .{}, .{ .expand = .horizontal }) != null) {
+                return false;
             }
         }
 
@@ -105,7 +121,7 @@ fn dvui_frame() void {
         }
     }
 
-    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_fill = .fill_window });
+    var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     defer scroll.deinit();
 
     var tl = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
@@ -144,12 +160,16 @@ fn dvui_frame() void {
         dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
     }
 
+    if (dvui.button(@src(), "Debug Window", .{}, .{})) {
+        dvui.toggleDebugWindow();
+    }
+
     {
         var scaler = dvui.scale(@src(), .{ .scale = &scale_val }, .{ .expand = .horizontal });
         defer scaler.deinit();
 
         {
-            var hbox = dvui.box(@src(), .horizontal, .{});
+            var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
             defer hbox.deinit();
 
             if (dvui.button(@src(), "Zoom In", .{}, .{})) {
@@ -163,7 +183,7 @@ fn dvui_frame() void {
 
         dvui.labelNoFmt(@src(), "Below is drawn directly by the backend, not going through DVUI.", .{}, .{ .margin = .{ .x = 4 } });
 
-        var box = dvui.box(@src(), .vertical, .{ .expand = .horizontal, .min_size_content = .{ .h = 40 }, .background = true, .margin = .{ .x = 8, .w = 8 } });
+        var box = dvui.box(@src(), .{}, .{ .expand = .horizontal, .min_size_content = .{ .h = 40 }, .background = true, .margin = .{ .x = 8, .w = 8 } });
         defer box.deinit();
 
         // Here is some arbitrary drawing that doesn't have to go through DVUI.
@@ -189,4 +209,6 @@ fn dvui_frame() void {
 
     // look at demo() for examples of dvui widgets, shows in a floating window
     dvui.Examples.demo();
+
+    return true;
 }
