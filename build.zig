@@ -21,6 +21,8 @@ pub fn build(b: *std.Build) !void {
         mod.addImport("backend", dvui_dep.module("testing"));
 
         const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = "testing-app" }));
+        // We skip the snapshots in the demo project to avoid them getting out of sync too easily
+        test_cmd.setEnvironmentVariable("DVUI_SNAPSHOT_IGNORE", "1");
         test_step.dependOn(&test_cmd.step);
     }
 
