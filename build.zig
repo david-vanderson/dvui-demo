@@ -52,6 +52,7 @@ pub fn build(b: *std.Build) !void {
             const exe = b.addExecutable(.{
                 .name = name,
                 .root_module = mod,
+                .use_llvm = true,
             });
 
             // Can either link the backend ourselves:
@@ -62,7 +63,7 @@ pub fn build(b: *std.Build) !void {
 
             // Or use a prelinked one:
             mod.addImport("dvui", dvui_dep.module("dvui_sdl3"));
-            mod.addImport("sdl-backend", dvui_dep.module("sdl3"));
+            mod.addImport("sdl-backend", dvui_dep.module("sdl3")); // for zls
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -99,13 +100,16 @@ pub fn build(b: *std.Build) !void {
         inline for (names, 0..) |name, i| {
             const exe = b.addExecutable(.{
                 .name = name,
-                .root_source_file = files[i],
-                .target = target,
-                .optimize = optimize,
+                .use_llvm = true,
+                .root_module = b.createModule(.{
+                    .root_source_file = files[i],
+                    .target = target,
+                    .optimize = optimize,
+                }),
             });
 
             exe.root_module.addImport("dvui", dvui_dep.module("dvui_raylib"));
-            exe.root_module.addImport("raylib-backend", dvui_dep.module("raylib"));
+            exe.root_module.addImport("raylib-backend", dvui_dep.module("raylib")); // for zls
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -129,17 +133,20 @@ pub fn build(b: *std.Build) !void {
         const dvui_dep = b.dependency("dvui", .{ .target = web_target, .optimize = optimize, .backend = .web });
 
         const web_test = b.addExecutable(.{
+            .use_llvm = true,
             .name = "web",
-            .root_source_file = b.path("app.zig"),
-            .target = web_target,
-            .optimize = optimize,
-            .link_libc = false,
-            .strip = if (optimize == .ReleaseFast or optimize == .ReleaseSmall) true else false,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("app.zig"),
+                .target = web_target,
+                .optimize = optimize,
+                .link_libc = false,
+                .strip = if (optimize == .ReleaseFast or optimize == .ReleaseSmall) true else false,
+            }),
         });
 
         web_test.entry = .disabled;
         web_test.root_module.addImport("dvui", dvui_dep.module("dvui_web"));
-        web_test.root_module.addImport("web-backend", dvui_dep.module("web"));
+        web_test.root_module.addImport("web-backend", dvui_dep.module("web")); // for zls
 
         const install_wasm = b.addInstallArtifact(web_test, .{
             .dest_dir = .{ .override = .{ .custom = "bin" } },
