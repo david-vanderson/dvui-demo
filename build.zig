@@ -52,7 +52,6 @@ pub fn build(b: *std.Build) !void {
             const exe = b.addExecutable(.{
                 .name = name,
                 .root_module = mod,
-                .use_llvm = true,
             });
 
             // Can either link the backend ourselves:
@@ -100,7 +99,6 @@ pub fn build(b: *std.Build) !void {
         inline for (names, 0..) |name, i| {
             const exe = b.addExecutable(.{
                 .name = name,
-                .use_llvm = true,
                 .root_module = b.createModule(.{
                     .root_source_file = files[i],
                     .target = target,
@@ -133,7 +131,6 @@ pub fn build(b: *std.Build) !void {
         const dvui_dep = b.dependency("dvui", .{ .target = web_target, .optimize = optimize, .backend = .web });
 
         const web_test = b.addExecutable(.{
-            .use_llvm = true,
             .name = "web",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("app.zig"),
