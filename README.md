@@ -1,8 +1,9 @@
 
 This branch is for trying to get raylib stuff working with wasm/emscripten.
 
-zig build raylib-standalone -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast
-zig build raylib-ontop -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast
+`zig build raylib-standalone -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast`
+
+`zig build raylib-ontop -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast`
 
 
 
