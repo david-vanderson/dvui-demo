@@ -1,3 +1,11 @@
+
+This branch is for trying to get raylib stuff working with wasm/emscripten.
+
+zig build raylib-standalone -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast
+zig build raylib-ontop -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast
+
+
+
 # DVUI Examples
 
 This repo serves as an example for how to integrate [dvui](https://github.com/david-vanderson/dvui).
