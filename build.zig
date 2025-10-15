@@ -4,85 +4,10 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const test_step = b.step("test", "Test the examples");
-
-    // Testing
-    {
-        // dvui's testing backend doesn't draw anything, for testing behavior
-        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .testing });
-
-        const mod = b.createModule(.{
-            .root_source_file = b.path("app.zig"),
-            .target = target,
-            .optimize = optimize,
-        });
-
-        mod.addImport("dvui", dvui_dep.module("dvui_testing"));
-        mod.addImport("backend", dvui_dep.module("testing"));
-
-        const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = "testing-app" }));
-        // We skip the snapshots in the demo project to avoid them getting out of sync too easily
-        test_cmd.setEnvironmentVariable("DVUI_SNAPSHOT_IGNORE", "1");
-        test_step.dependOn(&test_cmd.step);
-    }
-
-    // SDL Examples
-    {
-        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl3 });
-
-        const names = [_][]const u8{
-            "sdl3-standalone",
-            "sdl3-ontop",
-            "sdl3-app",
-        };
-
-        const files = [_]std.Build.LazyPath{
-            b.path("sdl-standalone.zig"),
-            b.path("sdl-ontop.zig"),
-            b.path("app.zig"),
-        };
-
-        inline for (names, 0..) |name, i| {
-            const mod = b.createModule(.{
-                .root_source_file = files[i],
-                .target = target,
-                .optimize = optimize,
-            });
-
-            const exe = b.addExecutable(.{
-                .name = name,
-                .root_module = mod,
-            });
-
-            // Can either link the backend ourselves:
-            // const dvui_mod = dvui_dep.module("dvui");
-            // const sdl3_mod = dvui_dep.module("sdl3");
-            // @import("dvui").linkBackend(dvui_mod, sdl3_mod);
-            // mod.addImport("dvui", dvui_mod);
-
-            // Or use a prelinked one:
-            mod.addImport("dvui", dvui_dep.module("dvui_sdl3"));
-            mod.addImport("sdl-backend", dvui_dep.module("sdl3")); // for zls
-
-            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
-            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
-            b.getInstallStep().dependOn(compile_step);
-
-            const run_cmd = b.addRunArtifact(exe);
-            run_cmd.step.dependOn(compile_step);
-
-            const run_step = b.step(name, "Run " ++ name);
-            run_step.dependOn(&run_cmd.step);
-
-            // This runs the tests in the examples with the sdl3 backend
-            const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = name }));
-            test_step.dependOn(&test_cmd.step);
-        }
-    }
-
     // Raylib Examples
     {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .raylib });
+        const emsdk_dep = b.dependency("emsdk", .{});
 
         const names = [_][]const u8{
             "raylib-standalone",
@@ -97,66 +22,74 @@ pub fn build(b: *std.Build) !void {
         };
 
         inline for (names, 0..) |name, i| {
-            const exe = b.addExecutable(.{
-                .name = name,
-                .root_module = b.createModule(.{
-                    .root_source_file = files[i],
-                    .target = target,
-                    .optimize = optimize,
-                }),
+            const mod = b.createModule(.{
+                .root_source_file = files[i],
+                .target = target,
+                .optimize = optimize,
             });
 
-            exe.root_module.addImport("dvui", dvui_dep.module("dvui_raylib"));
-            exe.root_module.addImport("raylib-backend", dvui_dep.module("raylib")); // for zls
+            if (target.query.os_tag == .emscripten) {
+                const wasm = b.addLibrary(.{
+                    .name = name,
+                    .root_module = mod,
+                });
 
-            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
-            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
-            b.getInstallStep().dependOn(compile_step);
+                wasm.root_module.addImport("dvui", dvui_dep.module("dvui_raylib"));
+                wasm.root_module.addImport("raylib-backend", dvui_dep.module("raylib")); // for zls
+                dvui_dep.module("dvui_raylib").addIncludePath(emsdk_dep.path("upstream/emscripten/cache/sysroot/include"));
+                dvui_dep.module("raylib").addIncludePath(emsdk_dep.path("upstream/emscripten/cache/sysroot/include"));
 
-            const run_cmd = b.addRunArtifact(exe);
-            run_cmd.step.dependOn(compile_step);
+                const emsdk = @import("dvui").emsdk;
+                const install_dir: std.Build.InstallDir = .{ .custom = "web" };
+                const emcc_flags = emsdk.emccDefaultFlags(b.allocator, .{
+                    .optimize = .Debug,
+                    //.asyncify = !std.mem.endsWith(u8, ex.name, "web"),
+                });
+                var emcc_settings = emsdk.emccDefaultSettings(b.allocator, .{
+                    .optimize = .Debug,
+                });
 
-            const run_step = b.step(name, "Run " ++ name);
-            run_step.dependOn(&run_cmd.step);
+                //emcc_settings.put("INITIAL_HEAP", "33554432") catch {};
+                emcc_settings.put("STACK_SIZE", "100000") catch {};
+
+                const emcc_step = emsdk.emccStep(b, wasm, wasm, .{
+                    .optimize = .Debug,
+                    .flags = emcc_flags,
+                    .settings = emcc_settings,
+                    //.shell_file_path = emsdk.shell(b),
+                    .install_dir = install_dir,
+                    //.embed_paths = &.{.{ .src_path = "resources/" }},
+                });
+
+                const html_filename = try std.fmt.allocPrint(b.allocator, "{s}.html", .{wasm.name});
+                const emrun_step = emsdk.emrunStep(
+                    b,
+                    b.getInstallPath(install_dir, html_filename),
+                    &.{},
+                );
+                emrun_step.dependOn(emcc_step);
+
+                const run_option = b.step(name, "Run it");
+                run_option.dependOn(emrun_step);
+            } else {
+                const exe = b.addExecutable(.{
+                    .name = name,
+                    .root_module = mod,
+                });
+
+                exe.root_module.addImport("dvui", dvui_dep.module("dvui_raylib"));
+                exe.root_module.addImport("raylib-backend", dvui_dep.module("raylib")); // for zls
+
+                const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
+                compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+                b.getInstallStep().dependOn(compile_step);
+
+                const run_cmd = b.addRunArtifact(exe);
+                run_cmd.step.dependOn(compile_step);
+
+                const run_step = b.step(name, "Run " ++ name);
+                run_step.dependOn(&run_cmd.step);
+            }
         }
-    }
-
-    // Web Example
-    {
-        const web_target = b.resolveTargetQuery(.{
-            .cpu_arch = .wasm32,
-            .os_tag = .freestanding,
-        });
-
-        const dvui_dep = b.dependency("dvui", .{ .target = web_target, .optimize = optimize, .backend = .web });
-
-        const web_test = b.addExecutable(.{
-            .name = "web",
-            .root_module = b.createModule(.{
-                .root_source_file = b.path("app.zig"),
-                .target = web_target,
-                .optimize = optimize,
-                .link_libc = false,
-                .strip = if (optimize == .ReleaseFast or optimize == .ReleaseSmall) true else false,
-            }),
-        });
-
-        web_test.entry = .disabled;
-        web_test.root_module.addImport("dvui", dvui_dep.module("dvui_web"));
-        web_test.root_module.addImport("web-backend", dvui_dep.module("web")); // for zls
-
-        const install_wasm = b.addInstallArtifact(web_test, .{
-            .dest_dir = .{ .override = .{ .custom = "bin" } },
-        });
-
-        const install_noto = b.addInstallBinFile(b.path("NotoSansKR-Regular.ttf"), "NotoSansKR-Regular.ttf");
-
-        const compile_step = b.step("web-app", "Compile the Web app");
-        compile_step.dependOn(&install_wasm.step);
-        compile_step.dependOn(&install_noto.step);
-        compile_step.dependOn(&b.addInstallFileWithDir(b.path("index.html"), .prefix, "bin/index.html").step);
-        const web_js = dvui_dep.namedLazyPath("web.js");
-        compile_step.dependOn(&b.addInstallFileWithDir(web_js, .prefix, "bin/web.js").step);
-        b.getInstallStep().dependOn(compile_step);
     }
 }

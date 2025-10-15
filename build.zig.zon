@@ -7,8 +7,12 @@
             //.path = "../dvui",
             //.url = "https://github.com/david-vanderson/dvui/archive/v0.3.0.tar.gz",
 
-            .url = "git+https://github.com/david-vanderson/dvui.git#1f6c271c64057d2b8235196ee93c9baa429a5f86",
-            .hash = "dvui-0.4.0-dev-AQFJmQcx1AB8b8TI6KI9MgQwz02C83UgLk-Vl4ENWqJd",
+            .url = "git+https://github.com/david-vanderson/dvui.git#17c1f13a7f665687e7482cf05b68f79a5b2d929b",
+            .hash = "dvui-0.4.0-dev-AQFJmaqR1QCjDBpwNGhtF3w91pNi45qxIXZgGL6Pfzjn",
+        },
+        .emsdk = .{
+            .url = "git+https://github.com/emscripten-core/emsdk#4.0.9",
+            .hash = "N-V-__8AAJl1DwBezhYo_VE6f53mPVm00R-Fk28NPW7P14EQ",
         },
     },
     .paths = .{""},

@@ -16,10 +16,11 @@ pub fn main() !void {
         // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
         try dvui.Backend.Common.windowsAttachConsole();
     }
-    var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
-    const gpa = gpa_instance.allocator();
+    //var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+    //const gpa = gpa_instance.allocator();
+    const gpa = std.heap.c_allocator;
 
-    defer _ = gpa_instance.deinit();
+    //defer _ = gpa_instance.deinit();
 
     // create OS window directly with raylib
     ray.SetConfigFlags(ray.FLAG_WINDOW_RESIZABLE);

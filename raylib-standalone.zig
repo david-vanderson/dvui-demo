@@ -7,8 +7,9 @@ comptime {
 
 const window_icon_png = @embedFile("zig-favicon.png");
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
-const gpa = gpa_instance.allocator();
+//var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+//const gpa = gpa_instance.allocator();
+const gpa = std.heap.c_allocator;
 
 const vsync = true;
 var scale_val: f32 = 1.0;
@@ -25,7 +26,7 @@ pub fn main() !void {
         // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
-    defer _ = gpa_instance.deinit();
+    //defer _ = gpa_instance.deinit();
 
     // init Raylib backend (creates OS window)
     // initWindow() means the backend calls CloseWindow for you in deinit()
