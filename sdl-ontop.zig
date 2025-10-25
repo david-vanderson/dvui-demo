@@ -24,6 +24,7 @@ pub fn main() !void {
         // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
+    SDLBackend.enableSDLLogging();
     dvui.Examples.show_demo_window = show_demo;
 
     // app_init is a stand-in for what your application is already doing to set things up
@@ -168,8 +169,9 @@ fn app_init() !void {
         return error.BackendError;
     }
 
+    const hidden_flag = if (dvui.accesskit_enabled) c.SDL_WINDOW_HIDDEN else 0;
     if (SDLBackend.sdl3) {
-        window = c.SDL_CreateWindow("DVUI SDL Ontop Example", @as(c_int, @intCast(640)), @as(c_int, @intCast(480)), c.SDL_WINDOW_HIGH_PIXEL_DENSITY | c.SDL_WINDOW_RESIZABLE) orelse {
+        window = c.SDL_CreateWindow("DVUI SDL Ontop Example", @as(c_int, @intCast(640)), @as(c_int, @intCast(480)), c.SDL_WINDOW_HIGH_PIXEL_DENSITY | c.SDL_WINDOW_RESIZABLE | hidden_flag) orelse {
             std.debug.print("Failed to open window: {s}\n", .{c.SDL_GetError()});
             return error.BackendError;
         };
@@ -178,7 +180,7 @@ fn app_init() !void {
             return error.BackendError;
         };
     } else {
-        window = c.SDL_CreateWindow("DVUI SDL Ontop Example", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, @as(c_int, @intCast(640)), @as(c_int, @intCast(480)), c.SDL_WINDOW_ALLOW_HIGHDPI | c.SDL_WINDOW_RESIZABLE) orelse {
+        window = c.SDL_CreateWindow("DVUI SDL Ontop Example", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, @as(c_int, @intCast(640)), @as(c_int, @intCast(480)), c.SDL_WINDOW_ALLOW_HIGHDPI | c.SDL_WINDOW_RESIZABLE | hidden_flag) orelse {
             std.debug.print("Failed to open window: {s}\n", .{c.SDL_GetError()});
             return error.BackendError;
         };
