@@ -38,7 +38,7 @@ pub fn main() !void {
         .icon = window_icon_png, // can also call setIconFromFileContent()
     });
     defer backend.deinit();
-    backend.log_events = true;
+    backend.log_events = false;
 
     // init dvui Window (maps onto a single OS window)
     var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{

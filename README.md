@@ -1,43 +1,9 @@
 
 This branch is for trying to get raylib stuff working with wasm/emscripten.
 
-`zig build raylib-standalone -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast`
+`zig build raylib-standalone -Dtarget=wasm32-emscripten -Doptimize=ReleaseSmall`
 
-`zig build raylib-ontop -Dtarget=wasm32-emscripten -Doptimize=ReleaseFast`
-
-Note: if you get a zig error about `module.base_address` missing field, then apply this patch to zig std lib:
-
-```
---- debug.zig	2025-10-15 14:43:08.850757204 -0400
-+++ debugHACK.zig	2025-10-15 14:43:01.600766196 -0400
-@@ -909,16 +909,17 @@
-             else => {},
-         }
- 
--        if (try module.getDwarfInfoForAddress(unwind_state.debug_info.allocator, unwind_state.dwarf_context.pc)) |di| {
--            return SelfInfo.unwindFrameDwarf(
--                unwind_state.debug_info.allocator,
--                di,
--                module.base_address,
--                &unwind_state.dwarf_context,
--                &it.ma,
--                null,
--            );
--        } else return error.MissingDebugInfo;
-+        return error.MissingDebugInfo;
-+        //if (try module.getDwarfInfoForAddress(unwind_state.debug_info.allocator, unwind_state.dwarf_context.pc)) |di| {
-+        //    return SelfInfo.unwindFrameDwarf(
-+        //        unwind_state.debug_info.allocator,
-+        //        di,
-+        //        module.base_address,
-+        //        &unwind_state.dwarf_context,
-+        //        &it.ma,
-+        //        null,
-+        //    );
-+        //} else return error.MissingDebugInfo;
-     }
-```
-
+`zig build raylib-ontop -Dtarget=wasm32-emscripten -Doptimize=ReleaseSmall`
 
 
 # DVUI Examples

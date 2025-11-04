@@ -50,7 +50,8 @@ pub fn build(b: *std.Build) !void {
                 });
 
                 //emcc_settings.put("INITIAL_HEAP", "33554432") catch {};
-                emcc_settings.put("STACK_SIZE", "100000") catch {};
+                emcc_settings.put("STACK_SIZE", "1000000") catch {};
+                //emcc_settings.put("ALLOW_MEMORY_GROWTH", "1") catch {};
 
                 const emcc_step = emsdk.emccStep(b, wasm, wasm, .{
                     .optimize = .Debug,
