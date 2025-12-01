@@ -49,6 +49,7 @@ pub fn main() !void {
         },
     });
     defer win.deinit();
+    try win.fonts.addBuiltinFontsForTheme(win.gpa, dvui.Theme.builtin.adwaita_light);
 
     main_loop: while (true) {
         c.BeginDrawing();
@@ -65,8 +66,7 @@ pub fn main() !void {
         try win.begin(nstime);
 
         // send all events to dvui for processing
-        const quit = try backend.addAllEvents(&win);
-        if (quit) break :main_loop;
+        try backend.addAllEvents(&win);
 
         // if dvui widgets might not cover the whole window, then need to clear
         // the previous frame's render
@@ -142,7 +142,7 @@ fn dvui_frame() bool {
         \\- rest of the window is a scroll area
     , .{});
     tl2.addText("\n\n", .{});
-    tl2.addText("Framerate is set by Raylib.", .{});
+    tl2.addText("Framerate is set by Raylib (C api).", .{});
     tl2.addText("\n\n", .{});
     if (vsync) {
         tl2.addText("Framerate is capped by vsync.", .{});
@@ -200,9 +200,7 @@ fn dvui_frame() bool {
 
         // rs.r is the pixel rectangle, rs.s is the scale factor (like for
         // hidpi screens or display scaling)
-        // raylib multiplies everything internally by the monitor scale, so we
-        // have to divide by that
-        const r = RaylibBackend.dvuiRectToRaylib(rs.r);
+        const r = rs.r;
         const s = rs.s / dvui.windowNaturalScale();
         c.DrawText("Congrats! You created your first window!", @intFromFloat(r.x + 10 * s), @intFromFloat(r.y + 10 * s), @intFromFloat(20 * s), c.LIGHTGRAY);
     }
@@ -213,6 +211,13 @@ fn dvui_frame() bool {
 
     // look at demo() for examples of dvui widgets, shows in a floating window
     dvui.Examples.demo();
+
+    // check for quitting
+    for (dvui.events()) |*e| {
+        // assume we only have a single window
+        if (e.evt == .window and e.evt.window.action == .close) return false;
+        if (e.evt == .app and e.evt.app.action == .quit) return false;
+    }
 
     return true;
 }

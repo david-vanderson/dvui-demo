@@ -38,6 +38,7 @@ pub fn main() !void {
     // OS window is managed by raylib, not dvui
     var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{});
     defer win.deinit();
+    try win.fonts.addBuiltinFontsForTheme(win.gpa, dvui.Theme.builtin.adwaita_light);
 
     var selected_color: dvui.Color = dvui.Color.white;
 
@@ -48,7 +49,7 @@ pub fn main() !void {
         try win.begin(std.time.nanoTimestamp());
 
         // send all Raylib events to dvui for processing
-        _ = try backend.addAllEvents(&win);
+        try backend.addAllEvents(&win);
 
         if (backend.shouldBlockRaylibInput()) {
             // NOTE: I am using raygui here because it has a simple lock-unlock system
@@ -76,7 +77,7 @@ pub fn main() !void {
             }
         }
 
-        ray.DrawText("Congrats! You Combined Raylib, Raygui and DVUI!", 20, 400, 20, ray.RAYWHITE);
+        ray.DrawText("Congrats! You Combined Raylib (C api), Raygui and DVUI!", 20, 400, 20, ray.RAYWHITE);
 
         dvuiStuff();
 
@@ -103,9 +104,15 @@ fn colorPicker(result: *dvui.Color) void {
         var overlay = dvui.overlay(@src(), .{ .min_size_content = .{ .w = 100, .h = 100 } });
         defer overlay.deinit();
 
-        const bounds = RaylibBackend.dvuiRectToRaylib(overlay.data().contentRectScale().r);
+        const bounds = overlay.data().contentRectScale().r;
+        const ray_bounds: ray.Rectangle = .{
+            .x = bounds.x,
+            .y = bounds.y,
+            .width = bounds.w,
+            .height = bounds.h,
+        };
         var c_color: ray.Color = RaylibBackend.dvuiColorToRaylib(result.*);
-        _ = ray.GuiColorPicker(bounds, "Pick Color", &c_color);
+        _ = ray.GuiColorPicker(ray_bounds, "Pick Color", &c_color);
         result.* = RaylibBackend.raylibColorToDvui(c_color);
     }
 
