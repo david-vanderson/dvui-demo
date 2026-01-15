@@ -7,8 +7,8 @@
             //.path = "../dvui",
             //.url = "https://github.com/david-vanderson/dvui/archive/v0.3.0.tar.gz",
 
-            .url = "git+https://github.com/david-vanderson/dvui?ref=main#42e38e3c6f71fc0add67bf975ae55d9f6160ace2",
-            .hash = "dvui-0.4.0-dev-AQFJmdY12gCgaEhkBCndGN-Gga6P1pdY93Xl-1mCnV_a",
+            .url = "git+https://github.com/david-vanderson/dvui?ref=main#f3c9bc2eecc519f8fe5b2e6ec3d13f51aa9e50b5",
+            .hash = "dvui-0.4.0-dev-AQFJmfOU2gB3ExxgDg8Rq51bn72fJQKY-_u0GuZrGe_M",
         },
     },
     .paths = .{""},
