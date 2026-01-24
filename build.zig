@@ -271,6 +271,14 @@ pub fn build(b: *std.Build) !void {
             exe.root_module.addImport("dvui", dvui_dep.module("dvui_dx11"));
             exe.root_module.addImport("dx11-backend", dvui_dep.module("dx11")); // for zls
 
+            // This manifest makes hidpi work
+            exe.win32_manifest = dvui_dep.path("./src/main.manifest");
+            exe.subsystem = .Windows; // prevent console from showing
+
+            // If using accesskit, needs:
+            //exe.root_module.linkSystemLibrary("ws2_32", .{});
+            //exe.root_module.linkSystemLibrary("Userenv", .{});
+
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
             b.getInstallStep().dependOn(compile_step);
