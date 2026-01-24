@@ -15,7 +15,7 @@ This repo serves as an example for how to integrate [dvui](https://github.com/da
 
 - `zig build sdl3-ontop` or `zig build raylib-ontop`
   - you already have an app or game
-  - you want to add some gui stuff (like floating windows to for debugging)
+  - you want to add some gui stuff (like floating windows for debugging)
   - use this example for integration
   - src in [sdl-ontop.zig](sdl-ontop.zig) or [raylib-ontop.zig](raylib-ontop.zig)
 
