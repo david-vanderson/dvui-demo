@@ -12,7 +12,7 @@ pub fn build(b: *std.Build) !void {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .testing });
 
         const mod = b.createModule(.{
-            .root_source_file = b.path("app.zig"),
+            .root_source_file = b.path("examples/app.zig"),
             .target = target,
             .optimize = optimize,
         });
@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) !void {
         test_step.dependOn(&test_cmd.step);
     }
 
-    // SDL Examples
+    // SDL3 Examples
     {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl3 });
 
@@ -37,9 +37,9 @@ pub fn build(b: *std.Build) !void {
         };
 
         const files = [_]std.Build.LazyPath{
-            b.path("sdl-standalone.zig"),
-            b.path("sdl-ontop.zig"),
-            b.path("app.zig"),
+            b.path("examples/sdl-standalone.zig"),
+            b.path("examples/sdl-ontop.zig"),
+            b.path("examples/app.zig"),
         };
 
         inline for (names, 0..) |name, i| {
@@ -75,12 +75,53 @@ pub fn build(b: *std.Build) !void {
             run_step.dependOn(&run_cmd.step);
 
             // This runs the tests in the examples with the sdl3 backend
-            const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = name }));
+            const test_cmd = b.addRunArtifact(b.addTest(.{ .root_module = mod, .name = "test-" ++ name }));
             test_step.dependOn(&test_cmd.step);
         }
     }
 
-    // Raylib Examples
+    // SDL3gpu Examples
+    {
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl3gpu });
+
+        const names = [_][]const u8{
+            "sdl3gpu-standalone",
+            "sdl3gpu-ontop",
+        };
+
+        const files = [_]std.Build.LazyPath{
+            b.path("examples/sdl3gpu-standalone.zig"),
+            b.path("examples/sdl3gpu-ontop.zig"),
+        };
+
+        inline for (names, 0..) |name, i| {
+            const mod = b.createModule(.{
+                .root_source_file = files[i],
+                .target = target,
+                .optimize = optimize,
+            });
+
+            const exe = b.addExecutable(.{
+                .name = name,
+                .root_module = mod,
+            });
+
+            mod.addImport("dvui", dvui_dep.module("dvui_sdl3gpu"));
+            mod.addImport("sdl3gpu-backend", dvui_dep.module("sdl3")); // for zls
+
+            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
+            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+            b.getInstallStep().dependOn(compile_step);
+
+            const run_cmd = b.addRunArtifact(exe);
+            run_cmd.step.dependOn(compile_step);
+
+            const run_step = b.step(name, "Run " ++ name);
+            run_step.dependOn(&run_cmd.step);
+        }
+    }
+
+    // Raylib (C api) Examples
     {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .raylib });
 
@@ -91,9 +132,9 @@ pub fn build(b: *std.Build) !void {
         };
 
         const files = [_]std.Build.LazyPath{
-            b.path("raylib-standalone.zig"),
-            b.path("raylib-ontop.zig"),
-            b.path("app.zig"),
+            b.path("examples/raylib-standalone.zig"),
+            b.path("examples/raylib-ontop.zig"),
+            b.path("examples/app.zig"),
         };
 
         inline for (names, 0..) |name, i| {
@@ -121,6 +162,47 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
+    // Raylib (zig api) Examples
+    {
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .raylib_zig });
+
+        const names = [_][]const u8{
+            "raylib-zig-standalone",
+            "raylib-zig-ontop",
+            "raylib-zig-app",
+        };
+
+        const files = [_]std.Build.LazyPath{
+            b.path("examples/raylib-zig-standalone.zig"),
+            b.path("examples/raylib-zig-ontop.zig"),
+            b.path("examples/app.zig"),
+        };
+
+        inline for (names, 0..) |name, i| {
+            const exe = b.addExecutable(.{
+                .name = name,
+                .root_module = b.createModule(.{
+                    .root_source_file = files[i],
+                    .target = target,
+                    .optimize = optimize,
+                }),
+            });
+
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_raylib_zig"));
+            exe.root_module.addImport("raylib-zig-backend", dvui_dep.module("raylib_zig")); // for zls
+
+            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
+            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+            b.getInstallStep().dependOn(compile_step);
+
+            const run_cmd = b.addRunArtifact(exe);
+            run_cmd.step.dependOn(compile_step);
+
+            const run_step = b.step(name, "Run " ++ name);
+            run_step.dependOn(&run_cmd.step);
+        }
+    }
+
     // Web Example
     {
         const web_target = b.resolveTargetQuery(.{
@@ -133,7 +215,7 @@ pub fn build(b: *std.Build) !void {
         const web_test = b.addExecutable(.{
             .name = "web",
             .root_module = b.createModule(.{
-                .root_source_file = b.path("app.zig"),
+                .root_source_file = b.path("examples/app.zig"),
                 .target = web_target,
                 .optimize = optimize,
                 .link_libc = false,
@@ -149,14 +231,57 @@ pub fn build(b: *std.Build) !void {
             .dest_dir = .{ .override = .{ .custom = "bin" } },
         });
 
-        const install_noto = b.addInstallBinFile(b.path("NotoSansKR-Regular.ttf"), "NotoSansKR-Regular.ttf");
+        const install_noto = b.addInstallBinFile(b.path("examples/NotoSansKR-Regular.ttf"), "NotoSansKR-Regular.ttf");
 
         const compile_step = b.step("web-app", "Compile the Web app");
         compile_step.dependOn(&install_wasm.step);
         compile_step.dependOn(&install_noto.step);
-        compile_step.dependOn(&b.addInstallFileWithDir(b.path("index.html"), .prefix, "bin/index.html").step);
+        compile_step.dependOn(&b.addInstallFileWithDir(b.path("examples/index.html"), .prefix, "bin/index.html").step);
         const web_js = dvui_dep.namedLazyPath("web.js");
         compile_step.dependOn(&b.addInstallFileWithDir(web_js, .prefix, "bin/web.js").step);
         b.getInstallStep().dependOn(compile_step);
     }
+
+    // DX11 Examples
+    if (target.result.os.tag == .windows) {
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .dx11 });
+
+        const names = [_][]const u8{
+            "dx11-standalone",
+            "dx11-ontop",
+            "dx11-app",
+        };
+
+        const files = [_]std.Build.LazyPath{
+            b.path("examples/dx11-standalone.zig"),
+            b.path("examples/dx11-ontop.zig"),
+            b.path("examples/app.zig"),
+        };
+
+        inline for (names, 0..) |name, i| {
+            const exe = b.addExecutable(.{
+                .name = name,
+                .root_module = b.createModule(.{
+                    .root_source_file = files[i],
+                    .target = target,
+                    .optimize = optimize,
+                }),
+            });
+
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_dx11"));
+            exe.root_module.addImport("dx11-backend", dvui_dep.module("dx11")); // for zls
+
+            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
+            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+            b.getInstallStep().dependOn(compile_step);
+
+            const run_cmd = b.addRunArtifact(exe);
+            run_cmd.step.dependOn(compile_step);
+
+            const run_step = b.step(name, "Run " ++ name);
+            run_step.dependOn(&run_cmd.step);
+        }
+    }
+
+
 }
