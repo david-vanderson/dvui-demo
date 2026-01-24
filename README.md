@@ -22,3 +22,13 @@ This repo serves as an example for how to integrate [dvui](https://github.com/da
 - `zig build web-app`
   - you want to put an app or game in a web canvas
   - src in [app.zig](app.zig)
+
+Other backends:
+- SDL3GPU (uses sdlgpu for rendering)
+  - `zig build sdl3gpu-standalone`
+- SDL2
+  - `zig build sdl2-app`
+- Raylib (with raylib-zig bindings)
+  - `zig build raylib-zig-app`
+- Dx11 (Windows only)
+  - `zig build dx11-app`
