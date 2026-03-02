@@ -88,6 +88,12 @@ This repo serves as a template for using [dvui](https://github.com/david-vanders
       <td><code>dx11-ontop</code></td>
     </tr>
     <tr>
+      <td><strong>GLFW</strong></td>
+      <td><code>glfw-opengl-app</code></td>
+      <td>todo</td>
+      <td><code>glfw-opengl-ontop</code></td>
+    </tr>
+    <tr>
       <td><strong>Web</strong></td>
       <td><code>web-app</code></td>
       <td>none</td>
