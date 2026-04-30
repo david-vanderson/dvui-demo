@@ -5,10 +5,10 @@
     .dependencies = .{
         .dvui = .{
             //.path = "../dvui",
-            //.url = "https://github.com/david-vanderson/dvui/archive/v0.3.0.tar.gz",
+            //.url = "https://github.com/david-vanderson/dvui/archive/v0.4.0.tar.gz",
 
-            .url = "git+https://github.com/david-vanderson/dvui?ref=main#535ff1503b35d4107a3ea51bc41af26e858cb235",
-            .hash = "dvui-0.4.0-dev-AQFJmf-A3gCWYqYVQjenwJbQLtLAYAr2EnNWhbEdHI5O",
+            .url = "git+https://github.com/david-vanderson/dvui?ref=main#28cf388d15be87a74b2398be96bb4e74770e5f3b",
+            .hash = "dvui-0.5.0-dev-AQFJmX4J3wAYFu4RYeqOicQxHLHEmHGUP5_EN6HS_Fq_",
         },
     },
     .paths = .{""},

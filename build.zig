@@ -293,16 +293,14 @@ pub fn build(b: *std.Build) !void {
 
     // GLFW Examples
     {
-        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .glfw_opengl });
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .glfw });
 
         const names = [_][]const u8{
-            "glfw-opengl-app",
-            "glfw-opengl-ontop",
+            "glfw-app",
         };
 
         const files = [_]std.Build.LazyPath{
             b.path("examples/app.zig"),
-            b.path("examples/glfw-opengl-ontop.zig"),
         };
 
         inline for (names, 0..) |name, i| {
@@ -316,8 +314,44 @@ pub fn build(b: *std.Build) !void {
                 .use_llvm = true,
             });
 
-            exe.root_module.addImport("dvui", dvui_dep.module("dvui-glfw-opengl"));
-            exe.root_module.addImport("glfw-opengl-backend", dvui_dep.module("glfw-opengl")); // for zls
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_glfw"));
+            exe.root_module.addImport("glfw-backend", dvui_dep.module("glfw")); // for zls
+
+            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
+            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+            b.getInstallStep().dependOn(compile_step);
+
+            const run_cmd = b.addRunArtifact(exe);
+            run_cmd.step.dependOn(compile_step);
+
+            const run_step = b.step(name, "Run " ++ name);
+            run_step.dependOn(&run_cmd.step);
+        }
+    }
+
+    // wio Examples
+    {
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .wio });
+
+        const names = [_][]const u8{
+            "wio-app",
+        };
+
+        const files = [_]std.Build.LazyPath{
+            b.path("examples/app.zig"),
+        };
+
+        inline for (names, 0..) |name, i| {
+            const exe = b.addExecutable(.{
+                .name = name,
+                .root_module = b.createModule(.{
+                    .root_source_file = files[i],
+                    .target = target,
+                    .optimize = optimize,
+                }),
+            });
+
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_wio"));
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);

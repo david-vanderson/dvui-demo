@@ -91,7 +91,17 @@ This repo serves as a template for using [dvui](https://github.com/david-vanders
       <td><strong>GLFW</strong></td>
       <td><code>glfw-opengl-app</code></td>
       <td>todo</td>
-      <td><code>glfw-opengl-ontop</code></td>
+      <td>see dvui repo</td>
+    </tr>
+    <tr>
+      <td>
+        <strong>wio</strong>
+        <br>
+        <sub>OpenGL on <a href="https://github.com/ypsvlq/wio"><code>wio</code></a></sub>
+      </td>
+      <td><code>wio-app</code></td>
+      <td>todo</td>
+      <td>todo</td>
     </tr>
     <tr>
       <td><strong>Web</strong></td>
