@@ -26,7 +26,7 @@ pub const std_options: std.Options = .{
     .logFn = logFn,
 };
 
-var touchPoints: [2]?dvui.Point.Physical = [_]?dvui.Point.Physical{null} ** 2;
+var touchPoints: [2]?dvui.Point.Physical = @splat(null);
 var orig_content_scale: f32 = 1.0;
 
 const zig_favicon = @embedFile("src/zig-favicon.png");
@@ -34,7 +34,7 @@ const zig_favicon = @embedFile("src/zig-favicon.png");
 export fn dvui_init(platform_ptr: [*]const u8, platform_len: usize) i32 {
     const platform = platform_ptr[0..platform_len];
     dvui.log.debug("platform: {s}", .{platform});
-    const mac = if (std.mem.indexOf(u8, platform, "Mac") != null) true else false;
+    const mac = if (std.mem.find(u8, platform, "Mac") != null) true else false;
 
     WebBackend.back = WebBackend.init() catch {
         return 1;
