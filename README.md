@@ -89,7 +89,7 @@ This repo serves as a template for using [dvui](https://github.com/david-vanders
     </tr>
     <tr>
       <td><strong>GLFW</strong></td>
-      <td><code>glfw-opengl-app</code></td>
+      <td><code>glfw-app</code></td>
       <td>todo</td>
       <td>see dvui repo</td>
     </tr>
