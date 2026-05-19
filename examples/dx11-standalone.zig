@@ -5,18 +5,18 @@ const win32 = Backend.win32;
 
 const window_icon_png = @embedFile("zig-favicon.png");
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
-const gpa = gpa_instance.allocator();
+var dba_instance = std.heap.DebugAllocator(.{}){};
+const dba = dba_instance.allocator();
 
 const ExtraWindow = struct {
     state: *Backend.WindowState,
     backend: Backend.Context,
     fn deinit(self: ExtraWindow) void {
         self.backend.deinit();
-        gpa.destroy(self.state);
+        dba.destroy(self.state);
     }
 };
-var extra_windows: std.ArrayListUnmanaged(ExtraWindow) = .{};
+var extra_windows: std.ArrayListUnmanaged(ExtraWindow) = .empty;
 
 const vsync = true;
 
@@ -32,7 +32,7 @@ pub fn main() !void {
         // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
-    defer _ = gpa_instance.deinit();
+    defer _ = dba_instance.deinit();
 
     Backend.RegisterClass(window_class, .{}) catch win32.panicWin32(
         "RegisterClass",
@@ -44,8 +44,8 @@ pub fn main() !void {
     // init dx11 backend (creates and owns OS window)
     const first_backend = try Backend.initWindow(&window_state, .{
         .registered_class = window_class,
-        .dvui_gpa = gpa,
-        .allocator = gpa,
+        .dvui_gpa = dba,
+        .allocator = dba,
         .size = .{ .w = 800.0, .h = 600.0 },
         .min_size = .{ .w = 250.0, .h = 350.0 },
         .vsync = vsync,
@@ -67,7 +67,7 @@ pub fn main() !void {
         for (extra_windows.items) |window| {
             window.deinit();
         }
-        extra_windows.deinit(gpa);
+        extra_windows.deinit(dba);
     }
 
     const win = first_backend.getWindow();
@@ -217,13 +217,13 @@ fn gui_frame() !void {
     }
 
     if (dvui.button(@src(), "Spawn Another OS window", .{}, .{})) {
-        try extra_windows.ensureUnusedCapacity(gpa, 1);
-        const state = try gpa.create(Backend.WindowState);
-        errdefer gpa.destroy(state);
+        try extra_windows.ensureUnusedCapacity(dba, 1);
+        const state = try dba.create(Backend.WindowState);
+        errdefer dba.destroy(state);
         const backend = try Backend.initWindow(state, .{
             .registered_class = window_class,
-            .dvui_gpa = gpa,
-            .allocator = gpa,
+            .dvui_gpa = dba,
+            .allocator = dba,
             .size = .{ .w = 800.0, .h = 600.0 },
             .min_size = .{ .w = 250.0, .h = 350.0 },
             .vsync = vsync,

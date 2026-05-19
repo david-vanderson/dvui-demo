@@ -3,8 +3,8 @@ const dvui = @import("dvui");
 const Backend = @import("dx11-backend");
 const win32 = Backend.win32;
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
-const gpa = gpa_instance.allocator();
+var dba_instance = std.heap.DebugAllocator(.{}){};
+const dba = dba_instance.allocator();
 
 const log = std.log.scoped(.Dx11Ontop);
 
@@ -17,14 +17,14 @@ pub fn main() !void {
         // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
-    defer _ = gpa_instance.deinit();
+    defer _ = dba_instance.deinit();
     const wnd = createWindow();
 
     const options = createDeviceD3D(wnd) orelse return error.CreateDeviceFailed;
 
     log.info("Successfully created device.", .{});
     var window_state: Backend.WindowState = undefined;
-    const backend = Backend.attach(wnd, &window_state, gpa, options, .{ .vsync = false }) catch |e| @panic(@errorName(e));
+    const backend = Backend.attach(wnd, &window_state, dba, options, .{ .vsync = false }) catch |e| @panic(@errorName(e));
     defer backend.deinit();
     backend_attached = true;
 
