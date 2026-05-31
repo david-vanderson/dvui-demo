@@ -1,3 +1,10 @@
+
+# Experimental Raylib Emscripten stuff
+
+`zig-x86_64-linux-0.17.0-dev.420+8086ae176/zig build raylib-standalone -Dtarget=wasm32-emscripten -Doptimize=ReleaseSmall`
+
+
+
 # DVUI Examples
 
 This repo serves as a template for using [dvui](https://github.com/david-vanderson/dvui).
