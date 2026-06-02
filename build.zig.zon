@@ -2,13 +2,14 @@
     .name = .dvui_demo,
     .fingerprint = 0x5157a5a9478a7694,
     .version = "0.0.1",
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .dvui = .{
             //.path = "../dvui",
             //.url = "https://github.com/david-vanderson/dvui/archive/v0.4.0.tar.gz",
 
-            .url = "git+https://github.com/david-vanderson/dvui?ref=main#b876e37c429fb2c299fc76fb92a7a0d5c6604bd0",
-            .hash = "dvui-0.5.0-dev-AQFJmeEb9gBb8imnyhnKkPcNoKinhV_ZcEjaQRvjuEGF",
+            .url = "git+https://github.com/david-vanderson/dvui?ref=main#9d2f688d9d8420a4909cd6d625539dc29c4f693c",
+            .hash = "dvui-0.5.0-dev-AQFJmY_O9gC25ugASWYFdg2_3DU7jNFoyBZ9VCobV6_A",
         },
     },
     .paths = .{""},
