@@ -140,15 +140,39 @@ pub fn content() ?dvui.App.Result {
         dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
     }
 
+    if (dvui.backend.kind == .sdl3 or dvui.backend.kind == .sdl2) {
+        var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
+        defer hbox.deinit();
+
+        dvui.label(@src(), "Window State", .{}, .{ .gravity_y = 0.5 });
+
+        if (dvui.button(@src(), "Fullscreen", .{}, .{})) {
+            dvui.currentWindow().stateSet(.fullscreen);
+        }
+
+        if (dvui.button(@src(), "Maximize", .{}, .{})) {
+            dvui.currentWindow().stateSet(.maximize);
+        }
+
+        if (dvui.button(@src(), "Normal", .{}, .{})) {
+            dvui.currentWindow().stateSet(.normal);
+        }
+    }
+
     if (dvui.button(@src(), "Debug Window", .{}, .{})) {
         dvui.toggleDebugWindow();
     }
 
-    if (dvui.button(@src(), "Extra OS Window (experimental)", .{}, .{})) {
+    const os_win_label = if (extra_os_win) "Close the Os Window" else "Extra OS Window (experimental)";
+    if (dvui.button(@src(), os_win_label, .{}, .{})) {
         extra_os_win = !extra_os_win;
     }
     if (extra_os_win) {
-        const os_win = dvui.osWindow(@src(), .{ .title = "Child os window (or so I hope)", .size = .{ .w = 500, .h = 300 } }, .{});
+        const os_win = dvui.osWindow(
+            @src(),
+            .{ .title = "Child os window (or so I hope)", .size = .{ .w = 500, .h = 300 } },
+            .{ .open_flag = &extra_os_win },
+        );
         defer os_win.deinit();
         const b = dvui.box(@src(), .{}, .{ .background = true });
         defer b.deinit();

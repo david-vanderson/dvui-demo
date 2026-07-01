@@ -335,10 +335,12 @@ pub fn build(b: *std.Build) !void {
 
         const names = [_][]const u8{
             "wio-app",
+            "wio-standalone",
         };
 
         const files = [_]std.Build.LazyPath{
             b.path("examples/app.zig"),
+            b.path("examples/wio-standalone.zig"),
         };
 
         inline for (names, 0..) |name, i| {
@@ -352,6 +354,7 @@ pub fn build(b: *std.Build) !void {
             });
 
             exe.root_module.addImport("dvui", dvui_dep.module("dvui_wio"));
+            exe.root_module.addImport("wio-backend", dvui_dep.module("wio")); // for zls
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);

@@ -100,7 +100,7 @@ This repo serves as a template for using [dvui](https://github.com/david-vanders
         <sub>OpenGL on <a href="https://github.com/ypsvlq/wio"><code>wio</code></a></sub>
       </td>
       <td><code>wio-app</code></td>
-      <td>todo</td>
+      <td><code>wio-standalone</code></td>
       <td>todo</td>
     </tr>
     <tr>
