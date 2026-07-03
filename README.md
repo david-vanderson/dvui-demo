@@ -101,7 +101,7 @@ This repo serves as a template for using [dvui](https://github.com/david-vanders
       </td>
       <td><code>wio-app</code></td>
       <td><code>wio-standalone</code></td>
-      <td>todo</td>
+      <td><code>wio-ontop</code></td>
     </tr>
     <tr>
       <td><strong>Web</strong></td>

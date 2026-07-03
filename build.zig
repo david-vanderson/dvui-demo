@@ -336,11 +336,13 @@ pub fn build(b: *std.Build) !void {
         const names = [_][]const u8{
             "wio-app",
             "wio-standalone",
+            "wio-ontop",
         };
 
         const files = [_]std.Build.LazyPath{
             b.path("examples/app.zig"),
             b.path("examples/wio-standalone.zig"),
+            b.path("examples/wio-ontop.zig"),
         };
 
         inline for (names, 0..) |name, i| {
