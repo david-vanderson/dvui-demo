@@ -24,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
 
     dvui.Examples.show_demo_window = show_demo;
 
-    try wio.init(gpa, io, wio.EventQueue.eventFn, .{});
+    try wio.init(.{ .allocator = gpa, .io = io, .eventFn = wio.EventQueue.eventFn });
     defer wio.deinit();
 
     var events: wio.EventQueue = .empty;
@@ -81,6 +81,7 @@ pub fn main(init: std.process.Init) !void {
 
         // marks the beginning of a frame for dvui, can call dvui functions after this
         try win.begin(nstime);
+        renderer.clear();
 
         const keep_running = gui_frame();
         if (!keep_running) break :main_loop;

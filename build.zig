@@ -297,10 +297,12 @@ pub fn build(b: *std.Build) !void {
 
         const names = [_][]const u8{
             "glfw-app",
+            "glfw-opengl-ontop",
         };
 
         const files = [_]std.Build.LazyPath{
             b.path("examples/app.zig"),
+            b.path("examples/glfw-opengl-ontop.zig"),
         };
 
         inline for (names, 0..) |name, i| {
@@ -357,6 +359,46 @@ pub fn build(b: *std.Build) !void {
 
             exe.root_module.addImport("dvui", dvui_dep.module("dvui_wio"));
             exe.root_module.addImport("wio-backend", dvui_dep.module("wio")); // for zls
+
+            const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
+            compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+            b.getInstallStep().dependOn(compile_step);
+
+            const run_cmd = b.addRunArtifact(exe);
+            run_cmd.step.dependOn(compile_step);
+
+            const run_step = b.step(name, "Run " ++ name);
+            run_step.dependOn(&run_cmd.step);
+        }
+    }
+
+    // Pugl Examples
+    {
+        const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .pugl });
+
+        const names = [_][]const u8{
+            "pugl-app",
+            "pugl-standalone",
+        };
+
+        const files = [_]std.Build.LazyPath{
+            b.path("examples/app.zig"),
+            b.path("examples/pugl-standalone.zig"),
+        };
+
+        inline for (names, 0..) |name, i| {
+            const exe = b.addExecutable(.{
+                .name = name,
+                .root_module = b.createModule(.{
+                    .root_source_file = files[i],
+                    .target = target,
+                    .optimize = optimize,
+                }),
+                .use_llvm = true,
+            });
+
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_pugl"));
+            exe.root_module.addImport("pugl-backend", dvui_dep.module("pugl")); // for zls
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);

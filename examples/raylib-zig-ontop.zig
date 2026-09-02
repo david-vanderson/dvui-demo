@@ -50,7 +50,7 @@ pub fn main(init: std.process.Init) !void {
         try win.begin(win.backend.nanoTime());
 
         // send all Raylib events to dvui for processing
-        try backend.addAllEvents(&win);
+        _ = try backend.addAllEvents(&win);
 
         if (backend.shouldBlockRaylibInput()) {
             // NOTE: I am using raygui here because it has a simple lock-unlock system
@@ -124,7 +124,7 @@ fn colorPicker(result: *dvui.Color) void {
         defer hbox.deinit();
 
         dvui.labelNoFmt(@src(), &color_hex, .{}, .{
-            .color_text = result.*,
+            .color_text = .{ .color = result.* },
             .gravity_y = 0.5,
         });
 
