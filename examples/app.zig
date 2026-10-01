@@ -16,6 +16,8 @@ pub const dvui_app: dvui.App = .{
             .title = "DVUI App Example",
             .icon = window_icon_png,
             .window_init_options = .{
+                .keybinds_zoom = true, // Helps accessibility
+
                 // Could set a default theme here
                 // .theme = dvui.Theme.builtin.dracula,
             },
@@ -30,9 +32,6 @@ pub const panic = dvui.App.panic;
 pub const std_options: std.Options = .{
     .logFn = dvui.App.logFn,
 };
-
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
-const gpa = gpa_instance.allocator();
 
 var orig_content_scale: f32 = 1.0;
 var warn_on_quit: bool = false;
