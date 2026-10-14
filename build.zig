@@ -107,7 +107,7 @@ pub fn build(b: *std.Build) !void {
             });
 
             mod.addImport("dvui", dvui_dep.module("dvui_sdl3gpu"));
-            mod.addImport("sdl3gpu-backend", dvui_dep.module("sdl3")); // for zls
+            mod.addImport("sdl3gpu-backend", dvui_dep.module("sdl3gpu")); // for zls
 
             const compile_step = b.step("compile-" ++ name, "Compile " ++ name);
             compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -163,7 +163,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     // Raylib (zig api) Examples
-    {
+    if (false) {
         const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .raylib_zig });
 
         const names = [_][]const u8{
@@ -219,7 +219,7 @@ pub fn build(b: *std.Build) !void {
                 .target = web_target,
                 .optimize = optimize,
                 .link_libc = false,
-                .strip = if (optimize == .ReleaseFast or optimize == .ReleaseSmall) true else false,
+                .strip = if (optimize == .fast or optimize == .small) true else false,
             }),
         });
 
@@ -273,7 +273,7 @@ pub fn build(b: *std.Build) !void {
 
             // This manifest makes hidpi work
             exe.win32_manifest = dvui_dep.path("./src/main.manifest");
-            exe.subsystem = .Windows; // prevent console from showing
+            exe.subsystem = .windows; // prevent console from showing
 
             // If using accesskit, needs:
             //exe.root_module.linkSystemLibrary("ws2_32", .{});
