@@ -86,7 +86,9 @@ pub fn main(init: std.process.Init) !void {
     const view = try pugl.View.init(&world);
     defer view.deinit();
 
-    try view.setSizeHint(.default, .{ .width = 800, .height = 600 });
+    // pugl size hints are physical pixels
+    const scale = view.getScaleFactor();
+    try view.setSizeHint(.default, .{ .width = @intFromFloat(800 * scale), .height = @intFromFloat(600 * scale) });
     try view.setStringHint(.window_title, "DVUI pugl example");
     try view.setBoolHint(.resizable, true);
 
@@ -139,7 +141,7 @@ fn onEvent(view: *const pugl.View, event: pugl.event.Event) pugl.Error!void {
         },
         .update => if (state.end_us != null) try view.obscure(),
         .close => state.run = false,
-        .configure, .realize, .unrealize => {},
+        .configure, .realize, .unrealize, .blank, .flush => {},
         else => try view.obscure(),
     }
 }
